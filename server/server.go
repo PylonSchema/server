@@ -1,6 +1,7 @@
 package server
 
 import (
+	githubAuth "github.com/devhoodit/sse-chat/auth/github"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,7 +19,7 @@ func SetupRouter() *gin.Engine {
 		}
 		github := auth.Group("/github")
 		{
-			github.POST("/login")
+			github.GET("/login", githubAuth.RenderAuthView)
 			github.GET("/callback")
 		}
 	}
