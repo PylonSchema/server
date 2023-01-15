@@ -11,6 +11,9 @@ func SetupRouter() *gin.Engine {
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r)
 
+	r.GET("/", func(c *gin.Context) {
+	})
+
 	auth := r.Group("/auth")
 	{
 		sse := auth.Group("/sse")
@@ -20,7 +23,7 @@ func SetupRouter() *gin.Engine {
 		github := auth.Group("/github")
 		{
 			github.GET("/login", githubAuth.RenderAuthView)
-			github.GET("/callback")
+			github.GET("/callback", githubAuth.Authenticate)
 		}
 	}
 

@@ -7,5 +7,6 @@ import (
 func main() {
 	r := server.SetupRouter()
 
-	r.Run()
+	r.Run(":8080")
+	// log.Fatal(autotls.Run(r, "127.0.0.1"))
 }
