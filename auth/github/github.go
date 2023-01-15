@@ -3,7 +3,7 @@ package github
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 
@@ -18,6 +18,12 @@ var OAuthConfig *oauth2.Config
 const (
 	UserInfoEndpoint = "https://api.github.com/user/emails"
 )
+
+type GithubEmailInfo struct {
+	Email    string
+	Primary  bool
+	Verified bool
+}
 
 func init() {
 	OAuthConfig = &oauth2.Config{
@@ -77,7 +83,6 @@ func Authenticate(c *gin.Context) {
 			"state":   state,
 			"cookie":  cookie,
 		})
-
 		return
 	}
 
@@ -109,5 +114,32 @@ func Authenticate(c *gin.Context) {
 		})
 		return
 	}
-	fmt.Printf(string(userInfo))
+
+	var infos []GithubEmailInfo
+
+	err = json.Unmarshal(userInfo, &infos)
+	if err != nil {
+		panic(err)
+	}
+
+	var email string = ""
+
+	for _, info := range infos {
+		if !info.Primary {
+			continue
+		}
+		if !info.Verified {
+			continue
+		}
+		email = info.Email
+	}
+	if email == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "No vaild email",
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
 }
