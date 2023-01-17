@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/devhoodit/sse-chat/auth"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -88,12 +89,8 @@ func Authenticate(c *gin.Context) {
 
 	session.Delete("state")
 
-	token, err := OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
+	token, err := auth.ExchangeToken(c, c.Query("code"), OAuthConfig)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Exchange error",
-			"error":   err.Error(),
-		})
 		return
 	}
 
@@ -143,3 +140,5 @@ func Authenticate(c *gin.Context) {
 		"message": "ok",
 	})
 }
+
+func 
