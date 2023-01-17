@@ -149,7 +149,7 @@ func getUserInfo(c *gin.Context, token *oauth2.Token) (auth.UserInfo, error) {
 		email = info.Email
 	}
 	if email == "" {
-		return userInfo, errors.New("No Verified Email")
+		return userInfo, errors.New("no verified email")
 	}
 
 	return auth.UserInfo{Email: "email"}, err
