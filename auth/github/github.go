@@ -4,7 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
+	"errors"
+	"io"
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
@@ -89,37 +90,54 @@ func Authenticate(c *gin.Context) {
 
 	session.Delete("state")
 
-	token, err := auth.ExchangeToken(c, c.Query("code"), OAuthConfig)
+	token, err := OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
 	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Exchange error",
+			"error":   err.Error(),
+		})
 		return
 	}
 
+	userInfo, err := getUserInfo(c, token)
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Get UserInfo Error",
+			"error":   err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "ok",
+		"UserObject": userInfo,
+	})
+}
+
+func getUserInfo(c *gin.Context, token *oauth2.Token) (auth.UserInfo, error) {
+	var userInfo auth.UserInfo
 	client := OAuthConfig.Client(c, token)
 	userInfoResp, err := client.Get(UserInfoEndpoint)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "code resp error",
-		})
-		return
+		return userInfo, err
 	}
 
 	defer userInfoResp.Body.Close()
-	userInfo, err := ioutil.ReadAll(userInfoResp.Body)
+
+	githubUserInfo, err := io.ReadAll(userInfoResp.Body)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "read resp body error",
-		})
-		return
+		return userInfo, err
 	}
 
 	var infos []GithubEmailInfo
 
-	err = json.Unmarshal(userInfo, &infos)
+	err = json.Unmarshal(githubUserInfo, &infos)
 	if err != nil {
-		panic(err)
+		return userInfo, err
 	}
 
-	var email string = ""
+	email := ""
 
 	for _, info := range infos {
 		if !info.Primary {
@@ -131,14 +149,8 @@ func Authenticate(c *gin.Context) {
 		email = info.Email
 	}
 	if email == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "No vaild email",
-		})
+		return userInfo, errors.New("No Verified Email")
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
-	})
+	return auth.UserInfo{Email: "email"}, err
 }
-
-func 

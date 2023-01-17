@@ -7,6 +7,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type UserInfo struct {
+	Email string
+}
+
 func ExchangeToken(c *gin.Context, code string, oauthConfig *oauth2.Config) (*oauth2.Token, error) {
 	token, err := oauthConfig.Exchange(c.Request.Context(), code)
 	if err != nil {
