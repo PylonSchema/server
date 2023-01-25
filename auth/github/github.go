@@ -4,11 +4,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 
-	"github.com/devhoodit/sse-chat/auth"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -18,7 +16,7 @@ import (
 var OAuthConfig *oauth2.Config
 
 const (
-	UserInfoEndpoint = "https://api.github.com/user/emails"
+	EmailInfoEndpoint = "https://api.github.com/user/emails"
 )
 
 type GithubEmailInfo struct {
@@ -99,45 +97,32 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
-	userInfo, err := getUserInfo(c, token)
-
+	client := OAuthConfig.Client(c, token)
+	userInfoResp, err := client.Get(EmailInfoEndpoint)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Get UserInfo Error",
-			"error":   err.Error(),
+			"message": "code resp error",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":    "ok",
-		"UserObject": userInfo,
-	})
-}
-
-func getUserInfo(c *gin.Context, token *oauth2.Token) (auth.UserInfo, error) {
-	var userInfo auth.UserInfo
-	client := OAuthConfig.Client(c, token)
-	userInfoResp, err := client.Get(UserInfoEndpoint)
-	if err != nil {
-		return userInfo, err
-	}
-
 	defer userInfoResp.Body.Close()
-
-	githubUserInfo, err := io.ReadAll(userInfoResp.Body)
+	userInfo, err := io.ReadAll(userInfoResp.Body)
 	if err != nil {
-		return userInfo, err
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "read resp body error",
+		})
+		return
 	}
 
 	var infos []GithubEmailInfo
 
-	err = json.Unmarshal(githubUserInfo, &infos)
+	err = json.Unmarshal(userInfo, &infos)
 	if err != nil {
-		return userInfo, err
+		panic(err)
 	}
 
-	email := ""
+	var email string = ""
 
 	for _, info := range infos {
 		if !info.Primary {
@@ -149,8 +134,12 @@ func getUserInfo(c *gin.Context, token *oauth2.Token) (auth.UserInfo, error) {
 		email = info.Email
 	}
 	if email == "" {
-		return userInfo, errors.New("no verified email")
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "No vaild email",
+		})
 	}
 
-	return auth.UserInfo{Email: "email"}, err
+	c.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
 }
