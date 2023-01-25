@@ -13,20 +13,20 @@ import (
 	"golang.org/x/oauth2/github"
 )
 
-var OAuthConfig *oauth2.Config
+var oAuthConfig *oauth2.Config
 
 const (
-	EmailInfoEndpoint = "https://api.github.com/user/emails"
+	emailInfoEndpoint = "https://api.github.com/user/emails"
 )
 
-type GithubEmailInfo struct {
+type githubEmailInfo struct {
 	Email    string
 	Primary  bool
 	Verified bool
 }
 
 func init() {
-	OAuthConfig = &oauth2.Config{
+	oAuthConfig = &oauth2.Config{
 		ClientID:     "03310852bd9891db5f0e",
 		ClientSecret: "e2989c0dbb1896a097882778fb05ba5f9fc02e4a",
 		RedirectURL:  "http://localhost:8080/auth/github/callback",
@@ -49,7 +49,7 @@ func RenderAuthView(c *gin.Context) {
 }
 
 func getLoginURL(state string) string {
-	return OAuthConfig.AuthCodeURL(state)
+	return oAuthConfig.AuthCodeURL(state)
 }
 
 func RandToken() string {
@@ -88,7 +88,7 @@ func Authenticate(c *gin.Context) {
 
 	session.Delete("state")
 
-	token, err := OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
+	token, err := oAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Exchange error",
@@ -97,8 +97,8 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
-	client := OAuthConfig.Client(c, token)
-	userInfoResp, err := client.Get(EmailInfoEndpoint)
+	client := oAuthConfig.Client(c, token)
+	userInfoResp, err := client.Get(emailInfoEndpoint)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "code resp error",
@@ -115,7 +115,7 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
-	var infos []GithubEmailInfo
+	var infos []githubEmailInfo
 
 	err = json.Unmarshal(userInfo, &infos)
 	if err != nil {
@@ -125,13 +125,10 @@ func Authenticate(c *gin.Context) {
 	var email string = ""
 
 	for _, info := range infos {
-		if !info.Primary {
-			continue
+		if info.Verified {
+			email = info.Email
+			break
 		}
-		if !info.Verified {
-			continue
-		}
-		email = info.Email
 	}
 	if email == "" {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
