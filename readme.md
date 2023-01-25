@@ -8,6 +8,7 @@ go run main.go
 
 ### Hot Reloading
 ```
+go install github.com/zzwx/fresh@latest
 fresh
 ```
 
