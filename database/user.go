@@ -33,14 +33,24 @@ func (d *GormDatabase) GetUserByName(name string) (*model.User, error) {
 	return nil, err
 }
 
+func (d *GormDatabase) GetAuthByUUID(uuid uuid.UUID) (*model.Auth, error) {
+	auth := new(model.Auth)
+	err := d.DB.Where("secret_uuid = ?", uuid).Find(auth).Error
+	if err == gorm.ErrRecordNotFound {
+		err = nil
+	}
+	if auth.secret_uuid == uuid {
+		return auth, err
+	}
+	return nil, err
+}
+
 //email 중복 확인
 func (d *GormDatabase) IsEmailUsed(email string) (*model.User) {
 	user := new(model.User)
 	result := d.DB.First(&user, "email = ?", email)
 	if(result.email == email)	{
-		return true
+		return truess
 	}
-	else return false
+	return false
 }
-
-func 
