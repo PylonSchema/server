@@ -3,6 +3,8 @@ package database
 import (
 	"time"
 
+	uuid "github.com/google/uuid"
+
 	"path/filepath"
 	"gorm.io/gorm"
 	"C:\Users\Administrator\Desktop\DevStudy\GoLangChat\sse-chat-main\model"
@@ -25,8 +27,20 @@ func (d *GormDatabase) GetUserByName(name string) (*model.User, error) {
 	if err == gorm.ErrRecordNotFound {
 		err = nil
 	}
-	if user.Name == name {
+	if user.userame == name {
 		return user, err
 	}
 	return nil, err
 }
+
+//email 중복 확인
+func (d *GormDatabase) IsEmailUsed(email string) (*model.User) {
+	user := new(model.User)
+	result := d.DB.First(&user, "email = ?", email)
+	if(result.email == email)	{
+		return true
+	}
+	else return false
+}
+
+func 
