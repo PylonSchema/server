@@ -23,7 +23,7 @@ type Sse struct {
 }
 
 type Social struct {
-	secret_uuid   uuid.UUID
+	//secret_uuid   uuid.UUID
 	social_type   int
 	id            string
 	access_token  string
