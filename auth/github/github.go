@@ -1,12 +1,11 @@
 package github
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
 
+	"github.com/devhoodit/sse-chat/auth"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -41,21 +40,11 @@ func RenderAuthView(c *gin.Context) {
 		Path:   "/auth",
 		MaxAge: 900,
 	})
-	state := RandToken()
+	state := auth.RandToken()
 	session.Set("state", state)
 	session.Save()
 	c.SetCookie("state", state, 900, "/auth", "localhost", true, false)
-	c.Redirect(http.StatusFound, getLoginURL(state))
-}
-
-func getLoginURL(state string) string {
-	return oAuthConfig.AuthCodeURL(state)
-}
-
-func RandToken() string {
-	b := make([]byte, 32)
-	rand.Read(b)
-	return base64.StdEncoding.EncodeToString(b)
+	c.Redirect(http.StatusFound, auth.GetLoginURL(state, oAuthConfig))
 }
 
 func Authenticate(c *gin.Context) {
@@ -135,6 +124,8 @@ func Authenticate(c *gin.Context) {
 			"message": "No vaild email",
 		})
 	}
+
+	// extraction email
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

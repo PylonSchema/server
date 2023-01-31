@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,4 +22,14 @@ func ExchangeToken(c *gin.Context, code string, oauthConfig *oauth2.Config) (*oa
 		})
 	}
 	return token, err
+}
+
+func RandToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func GetLoginURL(state string, oauthConfig *oauth2.Config) string {
+	return oauthConfig.AuthCodeURL(state)
 }
