@@ -3,3 +3,6 @@
     password="database password"
     address= "database address"
     port="database port"
+
+[sentry]
+    dsn="sentry dsn"
