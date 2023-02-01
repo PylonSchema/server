@@ -10,7 +10,10 @@ require (
 	golang.org/x/oauth2 v0.4.0
 )
 
-require github.com/BurntSushi/toml v1.2.1 // indirect
+require (
+	github.com/BurntSushi/toml v1.2.1 // indirect
+	github.com/getsentry/sentry-go v0.17.0 // indirect
+)
 
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
