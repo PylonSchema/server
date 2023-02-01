@@ -7,27 +7,27 @@ import (
 )
 
 type User struct {
-	username     string `gorm:"primaryKey"`
-	account_type int
-	uuid         uuid.UUID
-	secret_uuid  uuid.UUID
-	email        string    `gorm:"unique;not null"`
-	created_at   time.Time `gorm:"autoCreateTime"`
-	updated_at   time.Time `gorm:"autoUpdateTime"`
+	Username    string `gorm:"primaryKey"`
+	AccountType int
+	UUID        uuid.UUID
+	SecretUUID  uuid.UUID
+	Email       string    `gorm:"unique;not null"`
+	CreatedAt   time.Time `gorm:"autoCreateTime"`
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 type Sse struct {
-	secret_uuid uuid.UUID
-	salt        string
-	pathword    string
+	SecretUUID uuid.UUID
+	Salt       string
+	Password   string
 }
 
 type Social struct {
 	//secret_uuid   uuid.UUID
-	social_type   int
-	id            string
-	access_token  string
-	refresh_token string
+	SocialType   int
+	Id           string
+	AccessToken  string
+	RefreshToken string
 }
 
 type Auth struct {
