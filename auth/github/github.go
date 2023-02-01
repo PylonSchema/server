@@ -18,6 +18,14 @@ const (
 	emailInfoEndpoint = "https://api.github.com/user/emails"
 )
 
+type Database interface {
+	// implement needed
+}
+
+type Github struct {
+	DB Database
+}
+
 type githubEmailInfo struct {
 	Email    string
 	Primary  bool
