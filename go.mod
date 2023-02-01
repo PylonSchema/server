@@ -10,6 +10,8 @@ require (
 	golang.org/x/oauth2 v0.4.0
 )
 
+require github.com/BurntSushi/toml v1.2.1 // indirect
+
 require (
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect

@@ -1,3 +1,13 @@
+### Make config file
+
+make ./config.toml file
+
+[database]
+username="database username"
+password="database password"
+address="database address"
+port="database port"
+
 
 ### Test
 
