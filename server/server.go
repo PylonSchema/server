@@ -9,6 +9,7 @@ import (
 
 type conf struct {
 	Database *databaseInfo
+	Sentry   *sentryInfo
 }
 
 type databaseInfo struct {
@@ -18,11 +19,12 @@ type databaseInfo struct {
 	Port     string `toml:"port"`
 }
 
+type sentryInfo struct {
+	Dsn string `toml:"dsn"`
+}
+
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
-
-	// MiddleWare setting, server/middleware.go
-	setMiddleWare(r)
 
 	var conf conf
 	_, err := toml.DecodeFile("conf.toml", &conf)
@@ -31,10 +33,17 @@ func SetupRouter() *gin.Engine {
 	}
 
 	d, err := database.Connect(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
-
 	if err != nil {
 		panic(err)
 	}
+
+	err = d.AutoMigration() // auto migration, check table is Exist, if not create
+	if err != nil {
+		panic(err)
+	}
+
+	// MiddleWare setting, server/middleware.go
+	setMiddleWare(r, &conf)
 
 	githubRouter := githubAuth.Github{DB: d}
 
@@ -49,8 +58,8 @@ func SetupRouter() *gin.Engine {
 		}
 		github := auth.Group("/github")
 		{
-			github.GET("/login", githubRouter.RenderAuthView)
-			github.GET("/callback", githubRouter.Authenticate)
+			github.GET("/login", githubRouter.Login)
+			github.GET("/callback", githubRouter.Callback)
 		}
 	}
 
