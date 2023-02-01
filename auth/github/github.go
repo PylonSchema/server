@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
+	"github.com/devhoodit/sse-chat/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 )
@@ -19,7 +21,8 @@ const (
 )
 
 type Database interface {
-	// implement needed
+	IsEmailUsed(email string) bool
+	CreateUser(user *model.User) error
 }
 
 type Github struct {
@@ -42,7 +45,7 @@ func init() {
 	}
 }
 
-func RenderAuthView(c *gin.Context) {
+func (g *Github) Login(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Options(sessions.Options{
 		Path:   "/auth",
@@ -55,7 +58,7 @@ func RenderAuthView(c *gin.Context) {
 	c.Redirect(http.StatusFound, auth.GetLoginURL(state, oAuthConfig))
 }
 
-func Authenticate(c *gin.Context) {
+func (g *Github) Callback(c *gin.Context) {
 
 	cookie, err := c.Cookie("state")
 	if err != nil {
@@ -75,10 +78,8 @@ func Authenticate(c *gin.Context) {
 	}
 
 	if state != cookie {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Wrong state",
-			"state":   state,
-			"cookie":  cookie,
+		c.AbortWithStatusJSON(http.StatusNotAcceptable, gin.H{
+			"message": "AccessDenied",
 		})
 		return
 	}
@@ -134,8 +135,50 @@ func Authenticate(c *gin.Context) {
 	}
 
 	// extraction email
+	if g.DB.IsEmailUsed(email) {
+		c.JSON(http.StatusConflict, gin.H{
+			"message": "email is already used",
+		})
+		return
+	}
+
+	err = g.createUser(email, token)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "server error, try again",
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "ok",
+		"message": "ok, user successfully created",
 	})
+}
+
+func (g *Github) createUser(email string, token *oauth2.Token) error {
+	privateUUID, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+
+	publicUUID, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+
+	user := model.User{
+		Username:    email,
+		AccountType: 1, // static, account type is social
+		UUID:        publicUUID,
+		SecretUUID:  privateUUID,
+		Email:       email,
+	}
+
+	err = g.DB.CreateUser(&user)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
