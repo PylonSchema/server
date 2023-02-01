@@ -1,13 +1,8 @@
 package database
 
 import (
-	"time"
-
-	uuid "github.com/google/uuid"
-
-	"path/filepath"
+	"github.com/devhoodit/sse-chat/model"
 	"gorm.io/gorm"
-	"C:\Users\Administrator\Desktop\DevStudy\GoLangChat\sse-chat-main\model"
 )
 
 // CreateUser
@@ -27,30 +22,33 @@ func (d *GormDatabase) GetUserByName(name string) (*model.User, error) {
 	if err == gorm.ErrRecordNotFound {
 		err = nil
 	}
-	if user.userame == name {
+	if user.Username == name {
 		return user, err
 	}
 	return nil, err
 }
 
-func (d *GormDatabase) GetAuthByUUID(uuid uuid.UUID) (*model.Auth, error) {
-	auth := new(model.Auth)
-	err := d.DB.Where("secret_uuid = ?", uuid).Find(auth).Error
-	if err == gorm.ErrRecordNotFound {
-		err = nil
-	}
-	if auth.secret_uuid == uuid {
-		return auth, err
-	}
-	return nil, err
-}
+// func (d *GormDatabase) GetAuthByUUID(uuid uuid.UUID) (*model.Auth, error) {
+// 	auth := new(model.Auth)
+// 	err := d.DB.Where("secret_uuid = ?", uuid).Find(auth).Error
+// 	if err == gorm.ErrRecordNotFound {
+// 		err = nil
+// 	}
+// 	if auth.secret_uuid == uuid {
+// 		return auth, err
+// 	}
+// 	return nil, err
+// }
 
-//email 중복 확인
-func (d *GormDatabase) IsEmailUsed(email string) (*model.User) {
+// email 중복 확인
+func (d *GormDatabase) IsEmailUsed(email string) bool {
 	user := new(model.User)
-	result := d.DB.First(&user, "email = ?", email)
-	if(result.email == email)	{
-		return truess
+	err := d.DB.Where("email = ?", email).Find(user).Error
+	if err == gorm.ErrRecordNotFound {
+		return false
+	}
+	if user.Email == email {
+		return true
 	}
 	return false
 }

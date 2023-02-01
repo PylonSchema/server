@@ -9,20 +9,24 @@ import (
 	"gorm.io/gorm"
 )
 
-var (
-	db *gorm.DB
-)
+type GormDatabase struct {
+	DB *gorm.DB
+}
 
-func Connect() {
+func Connect() (*GormDatabase, error) {
 	fmt.Println("Connecting to Mysql Database")
 	dsn := "user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local"
 	d, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	sqlDB, err := d.DB()
+
+	if err != nil {
+		return nil, err
+	}
 
 	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
 	sqlDB.SetMaxIdleConns(10)
@@ -33,9 +37,5 @@ func Connect() {
 	// MySQL 서버, OS 또는 기타 미들웨어에 의해 연결이 종료되기 전에 안전하게 드라이버로 연결을 종료했는지 확인하는 데 필요
 	sqlDB.SetConnMaxLifetime(time.Minute * 3)
 
-	db = d
-}
-
-func GetDB() *gorm.DB {
-	return db
+	return &GormDatabase{DB: d}, nil
 }
