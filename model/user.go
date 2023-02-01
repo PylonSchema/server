@@ -7,7 +7,7 @@ import (
 )
 
 type User struct {
-	Username    string `gorm:"primaryKey"`
+	Username    string
 	AccountType int
 	UUID        uuid.UUID
 	SecretUUID  uuid.UUID
@@ -16,14 +16,14 @@ type User struct {
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
-type Sse struct {
+type Origin struct {
 	SecretUUID uuid.UUID
 	Salt       string
 	Password   string
 }
 
 type Social struct {
-	//secret_uuid   uuid.UUID
+	SecretUUID   uuid.UUID
 	SocialType   int
 	Id           string
 	AccessToken  string
@@ -31,7 +31,7 @@ type Social struct {
 }
 
 type Auth struct {
-	Sse    Sse    `gorm:"embedded"`
+	Origin Origin `gorm:"embedded"`
 	Social Social `gorm:"embedded"`
 }
 
