@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/devhoodit/sse-chat/model"
 	_ "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -38,4 +39,14 @@ func Connect(username string, password string, address string, port string) (*Go
 	sqlDB.SetConnMaxLifetime(time.Minute * 3)
 
 	return &GormDatabase{DB: d}, nil
+}
+
+func (g *GormDatabase) AutoMigration() error {
+
+	err := g.DB.AutoMigrate(&model.User{}, &model.Origin{}, &model.Social{})
+	if err != nil {
+		panic(err)
+	}
+
+	return nil
 }
