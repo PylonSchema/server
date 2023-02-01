@@ -2,6 +2,7 @@ package server
 
 import (
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
+	// "github.com/devhoodit/sse-chat/database"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,6 +11,12 @@ func SetupRouter() *gin.Engine {
 
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r)
+
+	// d, err := database.Connect()
+
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	r.GET("/", func(c *gin.Context) {
 	})
