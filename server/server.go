@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+
 	"github.com/BurntSushi/toml"
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
 	"github.com/devhoodit/sse-chat/database"
@@ -10,9 +12,9 @@ import (
 )
 
 type conf struct {
-	Database   *databaseInfo
-	Sentry     *sentryInfo
-	githubAuth *oauth2Info
+	Database *databaseInfo
+	Sentry   *sentryInfo
+	Oauth    map[string]oauth2Info
 }
 
 type databaseInfo struct {
@@ -23,13 +25,13 @@ type databaseInfo struct {
 }
 
 type sentryInfo struct {
-	Dsn string `toml:"dsn"`
+	Dsn string
 }
 
 type oauth2Info struct {
-	ClientID     string `toml:"client_id"`
-	ClientSecret string `toml:"client_secret"`
-	RedirectURL  string `toml:"redirect_url"`
+	Id       string
+	Secret   string
+	Redirect string
 }
 
 func SetupRouter() *gin.Engine {
@@ -57,12 +59,13 @@ func SetupRouter() *gin.Engine {
 	// make router
 
 	// github Oauth router
+	fmt.Println(conf.Oauth)
 	githubRouter := githubAuth.Github{
 		DB: d,
 		OAuthConfig: &oauth2.Config{
-			ClientID:     conf.githubAuth.ClientID,
-			ClientSecret: conf.githubAuth.ClientSecret,
-			RedirectURL:  conf.githubAuth.RedirectURL,
+			ClientID:     conf.Oauth["github"].Id,
+			ClientSecret: conf.Oauth["github"].Secret,
+			RedirectURL:  conf.Oauth["github"].Redirect,
 			Scopes:       []string{"user:email"},
 			Endpoint:     github.Endpoint,
 		}}
