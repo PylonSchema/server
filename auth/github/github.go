@@ -11,10 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
 )
-
-var oAuthConfig *oauth2.Config
 
 const (
 	emailInfoEndpoint = "https://api.github.com/user/emails"
@@ -26,23 +23,14 @@ type Database interface {
 }
 
 type Github struct {
-	DB Database
+	DB          Database
+	OAuthConfig *oauth2.Config
 }
 
 type githubEmailInfo struct {
 	Email    string
 	Primary  bool
 	Verified bool
-}
-
-func init() {
-	oAuthConfig = &oauth2.Config{
-		ClientID:     "03310852bd9891db5f0e",
-		ClientSecret: "e2989c0dbb1896a097882778fb05ba5f9fc02e4a",
-		RedirectURL:  "http://localhost:8080/auth/github/callback",
-		Scopes:       []string{"user:email"},
-		Endpoint:     github.Endpoint,
-	}
 }
 
 func (g *Github) Login(c *gin.Context) {
@@ -55,7 +43,7 @@ func (g *Github) Login(c *gin.Context) {
 	session.Set("state", state)
 	session.Save()
 	c.SetCookie("state", state, 900, "/auth", "localhost", true, false)
-	c.Redirect(http.StatusFound, auth.GetLoginURL(state, oAuthConfig))
+	c.Redirect(http.StatusFound, auth.GetLoginURL(state, g.OAuthConfig))
 }
 
 func (g *Github) Callback(c *gin.Context) {
@@ -86,7 +74,7 @@ func (g *Github) Callback(c *gin.Context) {
 
 	session.Delete("state")
 
-	token, err := oAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
+	token, err := g.OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"message": "Exchange error",
@@ -95,7 +83,7 @@ func (g *Github) Callback(c *gin.Context) {
 		return
 	}
 
-	client := oAuthConfig.Client(c, token)
+	client := g.OAuthConfig.Client(c, token)
 	userInfoResp, err := client.Get(emailInfoEndpoint)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
