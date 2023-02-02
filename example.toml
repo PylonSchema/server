@@ -7,6 +7,9 @@
 [sentry]
     dsn="sentry dsn"
 
+[secret]
+    session="your session key"
+
 [oauth.github]
     id="github client id"
     secret="github secret id"

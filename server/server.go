@@ -14,6 +14,7 @@ import (
 type conf struct {
 	Database *databaseInfo
 	Sentry   *sentryInfo
+	Secret   *secret
 	Oauth    map[string]oauth2Info
 }
 
@@ -26,6 +27,10 @@ type databaseInfo struct {
 
 type sentryInfo struct {
 	Dsn string
+}
+
+type secret struct {
+	Session string
 }
 
 type oauth2Info struct {

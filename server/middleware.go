@@ -12,14 +12,14 @@ import (
 
 func setMiddleWare(r *gin.Engine, config *conf) {
 	// cookie-based session store
-	r.Use(setSession())
+	r.Use(setSession(config.Secret.Session))
 
 	// set sentry
 	// r.Use(setSentry(config.Sentry.Dsn))
 }
 
-func setSession() gin.HandlerFunc {
-	store := cookie.NewStore([]byte("secret"))
+func setSession(key string) gin.HandlerFunc {
+	store := cookie.NewStore([]byte(key))
 	return sessions.Sessions("mySession", store)
 }
 
