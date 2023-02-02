@@ -12,20 +12,20 @@ import (
 func (g *Github) Callback(c *gin.Context) {
 	err := auth.CheckState(c)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, AccessDenied)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, auth.AccessDenied)
 		return
 	}
 
 	token, err := g.OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, AccessDenied)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, auth.AccessDenied)
 		return
 	}
 
 	userId, err := g.getUserId(c, token)
 
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, AccessDenied)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, auth.AccessDenied)
 		return
 	}
 
@@ -36,7 +36,7 @@ func (g *Github) Callback(c *gin.Context) {
 		})
 		return
 	} else if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, AccessDenied)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, auth.AccessDenied)
 		return
 	}
 

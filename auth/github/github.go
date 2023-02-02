@@ -72,13 +72,12 @@ func (g *Github) createUser(username string, userId string, email string, token 
 	if err != nil {
 		return err
 	}
-
 	social := model.Social{
 		SecretUUID:   privateUUID,
 		SocialType:   1, // static account type is github,
 		Id:           userId,
 		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
+		RefreshToken: token.RefreshToken, // this will be nil, github has no refresh token
 	}
 	err = g.DB.CreateSocial(&social)
 	if err != nil {
