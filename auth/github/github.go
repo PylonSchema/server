@@ -1,8 +1,6 @@
 package github
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
@@ -15,16 +13,22 @@ import (
 
 const (
 	emailInfoEndpoint = "https://api.github.com/user/emails"
+	userInfoEndpoint  = "https://api.github.com/user"
 )
 
 type Database interface {
 	IsEmailUsed(email string) bool
 	CreateUser(user *model.User) error
+	CreateSocial(social *model.Social) error
 }
 
 type Github struct {
 	DB          Database
 	OAuthConfig *oauth2.Config
+}
+
+type githubUserInfo struct {
+	Login string
 }
 
 type githubEmailInfo struct {
@@ -46,105 +50,7 @@ func (g *Github) Login(c *gin.Context) {
 	c.Redirect(http.StatusFound, auth.GetLoginURL(state, g.OAuthConfig))
 }
 
-func (g *Github) Callback(c *gin.Context) {
-
-	cookie, err := c.Cookie("state")
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "No state cookie",
-		})
-		return
-	}
-
-	session := sessions.Default(c)
-	state := session.Get("state")
-	if state == nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "session is nil",
-		})
-		return
-	}
-
-	if state != cookie {
-		c.AbortWithStatusJSON(http.StatusNotAcceptable, gin.H{
-			"message": "AccessDenied",
-		})
-		return
-	}
-
-	session.Delete("state")
-
-	token, err := g.OAuthConfig.Exchange(c.Request.Context(), c.Query("code"))
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Exchange error",
-			"error":   err.Error(),
-		})
-		return
-	}
-
-	client := g.OAuthConfig.Client(c, token)
-	userInfoResp, err := client.Get(emailInfoEndpoint)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "code resp error",
-		})
-		return
-	}
-
-	defer userInfoResp.Body.Close()
-	userInfo, err := io.ReadAll(userInfoResp.Body)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "read resp body error",
-		})
-		return
-	}
-
-	var infos []githubEmailInfo
-
-	err = json.Unmarshal(userInfo, &infos)
-	if err != nil {
-		panic(err)
-	}
-
-	var email string = ""
-
-	for _, info := range infos {
-		if info.Verified {
-			email = info.Email
-			break
-		}
-	}
-	if email == "" {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "No vaild email",
-		})
-	}
-
-	// extraction email
-	if g.DB.IsEmailUsed(email) {
-		c.JSON(http.StatusConflict, gin.H{
-			"message": "email is already used",
-		})
-		return
-	}
-
-	err = g.createUser(email, token)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "server error, try again",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message": "ok, user successfully created",
-	})
-}
-
-func (g *Github) createUser(email string, token *oauth2.Token) error {
+func (g *Github) createUser(username string, userId string, email string, token *oauth2.Token) error {
 	privateUUID, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -156,14 +62,25 @@ func (g *Github) createUser(email string, token *oauth2.Token) error {
 	}
 
 	user := model.User{
-		Username:    email,
+		Username:    username,
 		AccountType: 1, // static, account type is social
 		UUID:        publicUUID,
 		SecretUUID:  privateUUID,
 		Email:       email,
 	}
-
 	err = g.DB.CreateUser(&user)
+	if err != nil {
+		return err
+	}
+
+	social := model.Social{
+		SecretUUID:   privateUUID,
+		SocialType:   1, // static account type is github,
+		Id:           userId,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken,
+	}
+	err = g.DB.CreateSocial(&social)
 	if err != nil {
 		return err
 	}

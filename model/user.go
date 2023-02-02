@@ -29,13 +29,3 @@ type Social struct {
 	AccessToken  string
 	RefreshToken string
 }
-
-type Auth struct {
-	Origin Origin `gorm:"embedded"`
-	Social Social `gorm:"embedded"`
-}
-
-type Member struct {
-	User User `gorm:"embedded"`
-	Auth Auth `gorm:"embedded"`
-}

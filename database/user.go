@@ -15,6 +15,10 @@ func (d *GormDatabase) UpdateUser(user *model.User) error {
 	return d.DB.Save(user).Error
 }
 
+func (d *GormDatabase) CreateSocial(social *model.Social) error {
+	return d.DB.Create(social).Error
+}
+
 // Query
 func (d *GormDatabase) GetUserByName(name string) (*model.User, error) {
 	user := new(model.User)
