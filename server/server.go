@@ -28,7 +28,11 @@ type sentryInfo struct {
 
 type oauth2Info struct {
 	ClientID     string `toml:"client_id"`
+<<<<<<< HEAD
 	ClientSecret string `toml:"client_secret"`
+=======
+	ClientSecret string `toml:"client_secret`
+>>>>>>> 21e85bbe8bc38fbbfaa0bfcbd821c8b25a30ebf9
 	RedirectURL  string `toml:"redirect_url"`
 }
 
