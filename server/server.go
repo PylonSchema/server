@@ -5,11 +5,14 @@ import (
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
 	"github.com/devhoodit/sse-chat/database"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/github"
 )
 
 type conf struct {
-	Database *databaseInfo
-	Sentry   *sentryInfo
+	Database   *databaseInfo
+	Sentry     *sentryInfo
+	githubAuth *oauth2Info
 }
 
 type databaseInfo struct {
@@ -21,6 +24,12 @@ type databaseInfo struct {
 
 type sentryInfo struct {
 	Dsn string `toml:"dsn"`
+}
+
+type oauth2Info struct {
+	ClientID     string `toml:"client_id"`
+	ClientSecret string `toml:"client_secret`
+	RedirectURL  string `toml:"redirect_url"`
 }
 
 func SetupRouter() *gin.Engine {
@@ -45,7 +54,18 @@ func SetupRouter() *gin.Engine {
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r, &conf)
 
-	githubRouter := githubAuth.Github{DB: d}
+	// make router
+
+	// github Oauth router
+	githubRouter := githubAuth.Github{
+		DB: d,
+		OAuthConfig: &oauth2.Config{
+			ClientID:     conf.githubAuth.ClientID,
+			ClientSecret: conf.githubAuth.ClientSecret,
+			RedirectURL:  conf.githubAuth.RedirectURL,
+			Scopes:       []string{"user:email"},
+			Endpoint:     github.Endpoint,
+		}}
 
 	r.GET("/", func(c *gin.Context) {
 	})
@@ -55,6 +75,7 @@ func SetupRouter() *gin.Engine {
 		sse := auth.Group("/sse")
 		{
 			sse.POST("/login")
+			sse.POST("/create")
 		}
 		github := auth.Group("/github")
 		{

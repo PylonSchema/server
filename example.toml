@@ -6,3 +6,8 @@
 
 [sentry]
     dsn="sentry dsn"
+
+[github]
+    client_id="github oauth2 client id"
+    client_secret="github oauth2 client secret"
+    redirect_url="github oauth2 redirect url"
