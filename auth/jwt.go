@@ -8,16 +8,20 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/redis/go-redis/v9"
 )
 
 type Database interface {
 }
 
+type Store interface {
+	IsBlacklist(token string) (bool, error)
+	SetBlacklist(token string, experation time.Duration) error
+}
+
 type JwtAuth struct {
-	DB      Database
-	Session *redis.Client
-	Secret  string
+	DB     Database
+	Store  Store
+	Secret string
 }
 
 type JwtPayload struct {

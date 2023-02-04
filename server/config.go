@@ -2,6 +2,7 @@ package server
 
 type conf struct {
 	Database *databaseInfo
+	Store    *storeInfo
 	Sentry   *sentryInfo
 	Secret   *secret
 	Oauth    map[string]oauth2Info
@@ -12,6 +13,12 @@ type databaseInfo struct {
 	Password string `toml:"password"`
 	Address  string `toml:"address"`
 	Port     string `toml:"port"`
+}
+
+type storeInfo struct {
+	Address  string
+	Password string
+	Db       int
 }
 
 type sentryInfo struct {

@@ -1,8 +1,6 @@
 package github
 
 import (
-	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
@@ -49,26 +47,6 @@ func (g *Github) Login(c *gin.Context) {
 	})
 	state := auth.RandToken()
 	session.Set("state", state)
-	fmt.Println("start")
-	fmt.Println("get")
-	pong, err := g.JwtAuth.Session.Get(context.Background(), "state").Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(pong)
-	fmt.Println("set")
-	pong, err = g.JwtAuth.Session.Set(context.Background(), "state", state, 0).Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(pong)
-	fmt.Println("get")
-	pong, err = g.JwtAuth.Session.Get(context.Background(), "state").Result()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(pong)
-	fmt.Println("end")
 	session.Save()
 	c.SetCookie("state", state, 900, "/auth", "localhost", true, false)
 	c.Redirect(http.StatusFound, auth.GetLoginURL(state, g.OAuthConfig))

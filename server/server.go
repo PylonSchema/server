@@ -5,6 +5,7 @@ import (
 	"github.com/devhoodit/sse-chat/auth"
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
 	"github.com/devhoodit/sse-chat/database"
+	"github.com/devhoodit/sse-chat/store"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
@@ -23,12 +24,22 @@ func SetupRouter() *gin.Engine {
 		panic(err)
 	}
 
-	d, err := database.Connect(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	// database setting
+	d, err := database.New(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	if err != nil {
+		panic(err)
+	}
+	err = d.AutoMigration() // auto migration, check table is Exist, if not create
 	if err != nil {
 		panic(err)
 	}
 
-	err = d.AutoMigration() // auto migration, check table is Exist, if not create
+	//redis setting
+	store, err := store.New(&redis.Options{
+		Addr:     conf.Store.Address,
+		Password: conf.Store.Password, // no password set
+		DB:       conf.Store.Db,       // use default DB
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -36,22 +47,16 @@ func SetupRouter() *gin.Engine {
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r, &conf)
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	auth := &auth.JwtAuth{
-		Secret:  conf.Secret.Jwtkey,
-		DB:      d,
-		Session: rdb,
+	jwtAuth := &auth.JwtAuth{
+		Secret: conf.Secret.Jwtkey,
+		DB:     d,
+		Store:  store,
 	}
 
 	// github Oauth router
 	githubRouter := githubAuth.Github{
 		DB:      d,
-		JwtAuth: auth,
+		JwtAuth: jwtAuth,
 		OAuthConfig: &oauth2.Config{
 			ClientID:     conf.Oauth["github"].Id,
 			ClientSecret: conf.Oauth["github"].Secret,
