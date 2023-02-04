@@ -19,40 +19,26 @@ func (d *GormDatabase) CreateSocial(social *model.Social) error {
 	return d.DB.Create(social).Error
 }
 
-// Query
-func (d *GormDatabase) GetUserByName(name string) (*model.User, error) {
-	user := new(model.User)
-	err := d.DB.Where("name = ?", name).Find(user).Error
-	if err == gorm.ErrRecordNotFound {
-		err = nil
-	}
-	if user.Username == name {
-		return user, err
-	}
-	return nil, err
-}
-
-// func (d *GormDatabase) GetAuthByUUID(uuid uuid.UUID) (*model.Auth, error) {
-// 	auth := new(model.Auth)
-// 	err := d.DB.Where("secret_uuid = ?", uuid).Find(auth).Error
-// 	if err == gorm.ErrRecordNotFound {
-// 		err = nil
-// 	}
-// 	if auth.secret_uuid == uuid {
-// 		return auth, err
-// 	}
-// 	return nil, err
-// }
-
-// email 중복 확인
-func (d *GormDatabase) IsEmailUsed(email string) bool {
+func (d *GormDatabase) IsEmailUsed(email string) (bool, error) {
 	user := new(model.User)
 	err := d.DB.Where("email = ?", email).Find(user).Error
 	if err == gorm.ErrRecordNotFound {
-		return false
+		return false, nil
+	}
+	if err != nil {
+		return false, err
 	}
 	if user.Email == email {
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
+}
+
+func (d *GormDatabase) GetUserFromSocialByEmail(email string, socialType int) (*model.User, error) {
+	user := new(model.User)
+	err := d.DB.Where("email = ? AND account_type >= ?", email, socialType).Find(user).Error
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }

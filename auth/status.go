@@ -6,4 +6,7 @@ var (
 	AccessDenied = gin.H{
 		"message": "access denied",
 	}
+	InternalServerError = gin.H{
+		"message": "server error, try again",
+	}
 )

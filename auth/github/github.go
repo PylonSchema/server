@@ -1,6 +1,8 @@
 package github
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
@@ -17,13 +19,15 @@ const (
 )
 
 type Database interface {
-	IsEmailUsed(email string) bool
+	IsEmailUsed(email string) (bool, error)
+	GetUserFromSocialByEmail(email string, socialType int) (*model.User, error)
 	CreateUser(user *model.User) error
 	CreateSocial(social *model.Social) error
 }
 
 type Github struct {
 	DB          Database
+	JwtAuth     *auth.JwtAuth
 	OAuthConfig *oauth2.Config
 }
 
@@ -45,6 +49,26 @@ func (g *Github) Login(c *gin.Context) {
 	})
 	state := auth.RandToken()
 	session.Set("state", state)
+	fmt.Println("start")
+	fmt.Println("get")
+	pong, err := g.JwtAuth.Session.Get(context.Background(), "state").Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(pong)
+	fmt.Println("set")
+	pong, err = g.JwtAuth.Session.Set(context.Background(), "state", state, 0).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(pong)
+	fmt.Println("get")
+	pong, err = g.JwtAuth.Session.Get(context.Background(), "state").Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(pong)
+	fmt.Println("end")
 	session.Save()
 	c.SetCookie("state", state, 900, "/auth", "localhost", true, false)
 	c.Redirect(http.StatusFound, auth.GetLoginURL(state, g.OAuthConfig))
