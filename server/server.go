@@ -1,6 +1,9 @@
 package server
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/BurntSushi/toml"
 	"github.com/devhoodit/sse-chat/auth"
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
@@ -80,7 +83,12 @@ func SetupRouter() *gin.Engine {
 			github.GET("/login", githubRouter.Login)
 			github.GET("/callback", githubRouter.Callback)
 		}
-		r.GET("/token").Use().Use()
+		authRouter.Use(jwtAuth.VerifyMiddleWare()).GET("/token", func(ctx *gin.Context) {
+			fmt.Println("middleware")
+			ctx.AbortWithStatusJSON(http.StatusOK, gin.H{
+				"message": "token is vaild",
+			})
+		})
 	}
 
 	return r

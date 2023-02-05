@@ -2,6 +2,7 @@ package auth
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"time"
@@ -39,6 +40,7 @@ type AuthTokenClaims struct {
 func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
 	refreshToken, err := createRandomToken()
 	if err != nil {
+		fmt.Println("jwt create random token error")
 		return "", err
 	}
 	expirationTime := time.Now().Add(time.Hour)
@@ -53,8 +55,9 @@ func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString(j.Secret)
+	tokenString, err := token.SignedString([]byte(j.Secret))
 	if err != nil {
+		fmt.Println("jwt signed string error")
 		return "", err
 	}
 	return tokenString, nil
@@ -80,7 +83,7 @@ func (j *JwtAuth) VerifyMiddleWare() gin.HandlerFunc {
 		tokenString := token.Value
 		claims := &AuthTokenClaims{}
 		jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return j.Secret, nil
+			return []byte(j.Secret), nil
 		})
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -94,20 +97,38 @@ func (j *JwtAuth) VerifyMiddleWare() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"message": "token is invalid",
 			})
+			return
 		}
 
 		isExpired := claims.isExpired()
 		if isExpired {
-			// implement when access token is expired
-			// need to implement check session to this token is in blacklist token
+			// refresh token managed by another api
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "token is expired",
+			})
+			return
 		}
-		// implement when access token is expired
+
+		// check blacklist
+		isBlacklist, err := j.Store.IsBlacklist(tokenString)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+				"message": "server error",
+			})
+			return
+		}
+		if isBlacklist {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "token is expired",
+			})
+			return
+		}
 		c.Next()
 	}
 }
 
 func (a *AuthTokenClaims) isExpired() bool {
-	return time.Until(a.ExpiresAt.Time) > 0
+	return time.Until(a.ExpiresAt.Time) < 0
 }
 
 // not length parameter, since this function only used for generate random token

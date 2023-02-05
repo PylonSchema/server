@@ -2,6 +2,7 @@ package github
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/devhoodit/sse-chat/auth"
@@ -44,6 +45,7 @@ func (g *Github) Callback(c *gin.Context) {
 	isEmailUsed, err := g.DB.IsEmailUsed(email)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+		fmt.Println("github auth email is used")
 		return
 	}
 	if !isEmailUsed {
@@ -51,6 +53,7 @@ func (g *Github) Callback(c *gin.Context) {
 		err = g.createUser(userId, userId, email, token)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+			fmt.Println("github auth create user error")
 			return
 		}
 	}
@@ -59,6 +62,7 @@ func (g *Github) Callback(c *gin.Context) {
 	user, err := g.DB.GetUserFromSocialByEmail(email, 1) // github social type is 1
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+		fmt.Println("github auth get user by email error")
 		return
 	}
 
@@ -69,6 +73,7 @@ func (g *Github) Callback(c *gin.Context) {
 	jwtTokenString, err := g.JwtAuth.GenerateJWT(&jp)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+		fmt.Println("github auth generate jwt token error")
 		return
 	}
 	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", true, true)
