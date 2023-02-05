@@ -12,13 +12,10 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const validLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
+
 type UserInfo struct {
 	Email string
-}
-
-type AuthTokenClaims struct {
-	TokenUUID string `json:"tid"`
-	UserUUID  string `json:"uid"`
 }
 
 type RespInfo struct {
@@ -81,7 +78,3 @@ func (r *RespInfo) ReadBody(endpoint string) ([]byte, error) {
 
 	return b, nil
 }
-
-// func jwt() {
-
-// }

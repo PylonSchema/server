@@ -17,13 +17,15 @@ const (
 )
 
 type Database interface {
-	IsEmailUsed(email string) bool
+	IsEmailUsed(email string) (bool, error)
+	GetUserFromSocialByEmail(email string, socialType int) (*model.User, error)
 	CreateUser(user *model.User) error
 	CreateSocial(social *model.Social) error
 }
 
 type Github struct {
 	DB          Database
+	JwtAuth     *auth.JwtAuth
 	OAuthConfig *oauth2.Config
 }
 
@@ -72,13 +74,12 @@ func (g *Github) createUser(username string, userId string, email string, token 
 	if err != nil {
 		return err
 	}
-
 	social := model.Social{
 		SecretUUID:   privateUUID,
 		SocialType:   1, // static account type is github,
 		Id:           userId,
 		AccessToken:  token.AccessToken,
-		RefreshToken: token.RefreshToken,
+		RefreshToken: token.RefreshToken, // this will be nil, github has no refresh token
 	}
 	err = g.DB.CreateSocial(&social)
 	if err != nil {

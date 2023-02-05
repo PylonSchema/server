@@ -2,58 +2,47 @@ package server
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/BurntSushi/toml"
+	"github.com/devhoodit/sse-chat/auth"
 	githubAuth "github.com/devhoodit/sse-chat/auth/github"
 	"github.com/devhoodit/sse-chat/database"
+	"github.com/devhoodit/sse-chat/store"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 )
 
-type conf struct {
-	Database *databaseInfo
-	Sentry   *sentryInfo
-	Secret   *secret
-	Oauth    map[string]oauth2Info
-}
-
-type databaseInfo struct {
-	Username string `toml:"username"`
-	Password string `toml:"password"`
-	Address  string `toml:"address"`
-	Port     string `toml:"port"`
-}
-
-type sentryInfo struct {
-	Dsn string
-}
-
-type secret struct {
-	Session string
-}
-
-type oauth2Info struct {
-	Id       string
-	Secret   string
-	Redirect string
-}
+var SecretKey *secret
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
+	// load config form conf.toml
 	var conf conf
 	_, err := toml.DecodeFile("conf.toml", &conf)
 	if err != nil {
 		panic(err)
 	}
 
-	d, err := database.Connect(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	// database setting
+	d, err := database.New(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	if err != nil {
+		panic(err)
+	}
+	err = d.AutoMigration() // auto migration, check table is Exist, if not create
 	if err != nil {
 		panic(err)
 	}
 
-	err = d.AutoMigration() // auto migration, check table is Exist, if not create
+	//redis setting
+	store, err := store.New(&redis.Options{
+		Addr:     conf.Store.Address,
+		Password: conf.Store.Password, // no password set
+		DB:       conf.Store.Db,       // use default DB
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -61,12 +50,16 @@ func SetupRouter() *gin.Engine {
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r, &conf)
 
-	// make router
+	jwtAuth := &auth.JwtAuth{
+		Secret: conf.Secret.Jwtkey,
+		DB:     d,
+		Store:  store,
+	}
 
 	// github Oauth router
-	fmt.Println(conf.Oauth)
 	githubRouter := githubAuth.Github{
-		DB: d,
+		DB:      d,
+		JwtAuth: jwtAuth,
 		OAuthConfig: &oauth2.Config{
 			ClientID:     conf.Oauth["github"].Id,
 			ClientSecret: conf.Oauth["github"].Secret,
@@ -78,18 +71,24 @@ func SetupRouter() *gin.Engine {
 	r.GET("/", func(c *gin.Context) {
 	})
 
-	auth := r.Group("/auth")
+	authRouter := r.Group("/auth")
 	{
-		sse := auth.Group("/sse")
+		sse := authRouter.Group("/sse")
 		{
-			sse.POST("/login")
+			sse.GET("/login")
 			sse.POST("/create")
 		}
-		github := auth.Group("/github")
+		github := authRouter.Group("/github")
 		{
 			github.GET("/login", githubRouter.Login)
 			github.GET("/callback", githubRouter.Callback)
 		}
+		authRouter.Use(jwtAuth.VerifyMiddleWare()).GET("/token", func(ctx *gin.Context) {
+			fmt.Println("middleware")
+			ctx.AbortWithStatusJSON(http.StatusOK, gin.H{
+				"message": "token is vaild",
+			})
+		})
 	}
 
 	return r

@@ -4,6 +4,11 @@
     address= "database address"
     port="database port"
 
+[store]
+    address="redis address"
+    password="redus password"
+    db=0
+
 [sentry]
     dsn="sentry dsn"
 

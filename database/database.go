@@ -14,7 +14,7 @@ type GormDatabase struct {
 	DB *gorm.DB
 }
 
-func Connect(username string, password string, address string, port string) (*GormDatabase, error) {
+func New(username string, password string, address string, port string) (*GormDatabase, error) {
 	fmt.Println("Connecting to Mysql Database")
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/pylon?charset=utf8mb4&parseTime=True&loc=Local", username, password, address, port)
 	d, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
