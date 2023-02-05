@@ -32,7 +32,7 @@ func (g *Github) Callback(c *gin.Context) {
 	}
 
 	email, err := g.getUserEmail(c, token)
-	if err == auth.ErrNoVaildEmail {
+	if err == auth.ErrNoValidEmail {
 		c.AbortWithStatusJSON(http.StatusConflict, gin.H{
 			"message": "No vaild email, have no certified email",
 		})
@@ -129,7 +129,7 @@ func (g *Github) getUserEmail(c *gin.Context, token *oauth2.Token) (string, erro
 		}
 	}
 	if email == "" {
-		return "", auth.ErrNoVaildEmail
+		return "", auth.ErrNoValidEmail
 	}
 	return email, nil
 }

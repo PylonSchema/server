@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/BurntSushi/toml"
@@ -56,6 +55,10 @@ func SetupRouter() *gin.Engine {
 		Store:  store,
 	}
 
+	auth := &auth.Auth{
+		JwtAuth: jwtAuth,
+	}
+
 	// github Oauth router
 	githubRouter := githubAuth.Github{
 		DB:      d,
@@ -83,12 +86,12 @@ func SetupRouter() *gin.Engine {
 			github.GET("/login", githubRouter.Login)
 			github.GET("/callback", githubRouter.Callback)
 		}
-		authRouter.Use(jwtAuth.VerifyMiddleWare()).GET("/token", func(ctx *gin.Context) {
-			fmt.Println("middleware")
+		authRouter.Use(jwtAuth.AuthorizeRequired()).GET("/token", func(ctx *gin.Context) {
 			ctx.AbortWithStatusJSON(http.StatusOK, gin.H{
 				"message": "token is vaild",
 			})
 		})
+		authRouter.GET("/blacklist", auth.Blacklist)
 	}
 
 	return r

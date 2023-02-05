@@ -3,5 +3,5 @@ package auth
 import "errors"
 
 var (
-	ErrNoVaildEmail = errors.New("auth: no vaild email")
+	ErrNoValidEmail = errors.New("auth: no valid email")
 )

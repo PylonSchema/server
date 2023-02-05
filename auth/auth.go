@@ -1,80 +1,57 @@
 package auth
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"errors"
-	"io"
 	"net/http"
+	"time"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/oauth2"
 )
 
-const validLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890"
-
-type UserInfo struct {
-	Email string
+type Auth struct {
+	JwtAuth *JwtAuth
 }
 
-type RespInfo struct {
-	Context *gin.Context
-	Config  *oauth2.Config
-	Token   *oauth2.Token
-}
-
-func ExchangeToken(c *gin.Context, code string, oauthConfig *oauth2.Config) (*oauth2.Token, error) {
-	token, err := oauthConfig.Exchange(c.Request.Context(), code)
+func (a *Auth) Blacklist(c *gin.Context) {
+	token, err := c.Request.Cookie("token")
 	if err != nil {
+		if err == http.ErrNoCookie {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "no token cookie",
+			})
+			return
+		}
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "Exhange error",
-			"error":   err.Error(),
+			"message": "no valid token",
 		})
+		return
 	}
-	return token, err
-}
 
-func RandToken() string {
-	b := make([]byte, 32)
-	rand.Read(b)
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-func GetLoginURL(state string, oauthConfig *oauth2.Config) string {
-	return oauthConfig.AuthCodeURL(state)
-}
-
-func CheckState(c *gin.Context) error {
-	cookie, err := c.Cookie("state")
+	// parse cookie
+	tokenString := token.Value
+	claims := &AuthTokenClaims{}
+	jwtToken, err := a.JwtAuth.ParseToken(c, claims)
 	if err != nil {
-		return err
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
 	}
-	session := sessions.Default(c)
-	state := session.Get("state")
-	if state == nil {
-		return err
-	}
-	if state != cookie {
-		return errors.New("state and cookie is not equal")
-	}
-	session.Delete("state")
-	return nil
-}
 
-func (r *RespInfo) ReadBody(endpoint string) ([]byte, error) {
-	var b []byte
-	client := r.Config.Client(r.Context, r.Token)
-	resp, err := client.Get(endpoint)
+	// check token is valid
+	if !jwtToken.Valid {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "token is invalid",
+		})
+		return
+	}
+	err = a.JwtAuth.Store.SetBlacklist(tokenString, time.Until(claims.ExpiresAt.Time))
 	if err != nil {
-		return b, err
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
 	}
-	defer resp.Body.Close()
-
-	b, err = io.ReadAll(resp.Body)
-	if err != nil {
-		return b, err
-	}
-
-	return b, nil
+	c.AbortWithStatusJSON(http.StatusOK, gin.H{
+		"message": time.Until(claims.ExpiresAt.Time),
+	})
 }
