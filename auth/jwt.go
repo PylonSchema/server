@@ -63,7 +63,23 @@ func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
 	return tokenString, nil
 }
 
-func (j *JwtAuth) VerifyMiddleWare() gin.HandlerFunc {
+func (j *JwtAuth) ParseToken(c *gin.Context, claims *AuthTokenClaims) (*jwt.Token, error) {
+	token, err := c.Request.Cookie("token")
+	if err != nil {
+		return nil, err
+	}
+	// parse cookie
+	tokenString := token.Value
+	jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(j.Secret), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return jwtToken, nil
+}
+
+func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := c.Request.Cookie("token")
 		if err != nil {
