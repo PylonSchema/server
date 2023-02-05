@@ -1,9 +1,13 @@
+### Requirements
+MySql
+Redis
+Go
+
 ### Make config file
 
 ref ./example.toml file and change filename to conf.toml
 
-### Test
-
+### Run Server
 ```
 go run main.go
 ```
@@ -14,7 +18,12 @@ go run main.go
 go install github.com/zzwx/fresh@latest
 fresh
 ```
-
+or hot reloading with service state check
+```
+go install github.com/zzwx/fresh@latest
+./runner.ps1
+```
+run as administrator
 
 ### Supported OAuth2
-- None
+- Github
