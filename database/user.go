@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/devhoodit/sse-chat/model"
+	"github.com/PylonSchema/server/model"
 	"gorm.io/gorm"
 )
 

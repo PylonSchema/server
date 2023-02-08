@@ -1,24 +1,22 @@
-module github.com/devhoodit/sse-chat
+module github.com/PylonSchema/server
 
 go 1.19
 
-replace github.com/devhoodit/sse-chat/server => ./server
+replace github.com/PylonSchema/server/server => ./server
 
 require (
 	github.com/BurntSushi/toml v1.2.1
 	github.com/getsentry/sentry-go v0.17.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.2
+	github.com/golang-jwt/jwt/v4 v4.4.3
+	github.com/redis/go-redis/v9 v9.0.2
 	golang.org/x/oauth2 v0.4.0
 )
 
 require (
-	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.3 // indirect
-	github.com/gomodule/redigo v2.0.0+incompatible // indirect
-	github.com/redis/go-redis/v9 v9.0.2 // indirect
 )
 
 require (

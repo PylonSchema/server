@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/devhoodit/sse-chat/auth"
+	"github.com/PylonSchema/server/auth"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
 )

@@ -3,8 +3,8 @@ package github
 import (
 	"net/http"
 
-	"github.com/devhoodit/sse-chat/auth"
-	"github.com/devhoodit/sse-chat/model"
+	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
