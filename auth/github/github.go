@@ -77,7 +77,7 @@ func (g *Github) createUser(username string, userId string, email string, token 
 	social := model.Social{
 		SecretUUID:   privateUUID,
 		SocialType:   1, // static account type is github,
-		Id:           userId,
+		SocialId:     userId,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken, // this will be nil, github has no refresh token
 	}

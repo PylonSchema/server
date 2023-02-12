@@ -25,7 +25,7 @@ type Origin struct {
 type Social struct {
 	SecretUUID   uuid.UUID
 	SocialType   int
-	Id           string
+	SocialId     string
 	AccessToken  string
 	RefreshToken string
 }

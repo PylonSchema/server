@@ -23,6 +23,7 @@ const (
 type pipe interface {
 	Inject(c *Client) error
 	Remove(c *Client) error
+	Auth(tokenString string) error
 }
 
 type Client struct {
@@ -30,6 +31,9 @@ type Client struct {
 	once         sync.Once
 	writeChannel chan *Message
 	gatewayPipe  pipe
+	username     string // client username
+	uuid         string // client uuid
+	authorized   bool   // client authorized?, client username & uuid is defined after authorized, if not authorized can't do anything
 }
 
 // close socket connection & remove client from gateway
@@ -40,9 +44,32 @@ func (c *Client) closeConnection() {
 	})
 }
 
+func (c *Client) defineClient(message *Message) {
+	if c.authorized {
+		return
+	}
+	err := c.gatewayPipe.Auth((message.D["token"]).(string))
+	if err != nil {
+		d := map[string]interface{}{"type": "authorized error"}
+		command, err := json.Marshal(&Message{
+			Op: 10,
+			D:  d,
+		})
+		if err != nil {
+			return // need websocket write error
+		}
+		c.conn.WriteMessage(websocket.TextMessage, command)
+		c.closeConnection()
+		return
+	}
+	c.authorized = true
+	c.username = "client username"
+	c.uuid = "client uuid"
+}
+
 func (c *Client) readHandler(pongTimeout time.Duration) {
 	defer c.closeConnection()
-	c.conn.SetReadLimit(1024)
+	c.conn.SetReadLimit(2048)
 	c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 	c.conn.SetPongHandler(func(appData string) error {
 		c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
@@ -62,13 +89,20 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 		case MessageData:
 			c.writeChannel <- &message // reply test
+			// boardcast to channel implements need
 		case MessageAuthentication:
 			// message authorized implements
+			c.defineClient(&message)
 		case MessageClose:
-			c.writeChannel <- &Message{
+			command, err := json.Marshal(&Message{
 				Op: 10,
 				D:  nil,
+			})
+			if err != nil {
+				return // need websocket write error
 			}
+			c.conn.WriteMessage(websocket.TextMessage, command)
+			return
 		}
 
 	}

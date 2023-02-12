@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/PylonSchema/server/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -15,10 +16,16 @@ const (
 	pongTimeout = (pingTick * 19) / 10
 )
 
+type Database interface {
+	GetChannel(uuid string)
+}
+
 type Gateway struct {
 	Upgrader websocket.Upgrader
 	m        sync.RWMutex
 	channels map[string][]*Client
+	jwtAuth  *auth.JwtAuth
+	db       Database
 }
 
 func (g *Gateway) OpenGateway(c *gin.Context) {
@@ -36,6 +43,9 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		conn:         conn,
 		gatewayPipe:  g,
 		writeChannel: make(chan *Message),
+		authorized:   false,
+		username:     "",
+		uuid:         "",
 	}
 
 	go client.readHandler(pongTimeout)

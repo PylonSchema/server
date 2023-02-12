@@ -1,5 +1,9 @@
 package gateway
 
-func (g *Gateway) auth(tokenString string) {
-
+func (g *Gateway) Auth(tokenString string) error {
+	_, err := g.jwtAuth.AuthorizeToken(tokenString)
+	if err != nil {
+		return err
+	}
+	return nil
 }
