@@ -77,7 +77,11 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 		select {
 		case message := <-c.writeChannel:
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
-			err := c.conn.WriteJSON(&message)
+			command, err := json.Marshal(message)
+			if err != nil {
+				return // need websocket write error
+			}
+			err = c.conn.WriteMessage(websocket.TextMessage, command)
 			if err != nil {
 				return // need websocket write error
 			}

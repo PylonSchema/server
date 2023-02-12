@@ -33,8 +33,9 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		return
 	}
 	client := &Client{
-		conn:        conn,
-		gatewayPipe: g,
+		conn:         conn,
+		gatewayPipe:  g,
+		writeChannel: make(chan *Message),
 	}
 
 	go client.readHandler(pongTimeout)
