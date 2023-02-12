@@ -3,13 +3,22 @@ package gateway
 import (
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
+const (
+	pingTick    = 2 * time.Second
+	pongTimeout = (pingTick * 19) / 10
+)
+
 type Gateway struct {
 	Upgrader websocket.Upgrader
+	m        sync.RWMutex
+	channels map[string][]*Client
 }
 
 func (g *Gateway) OpenGateway(c *gin.Context) {
@@ -23,11 +32,19 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		})
 		return
 	}
-	for {
-		t, msg, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		conn.WriteMessage(t, msg)
+	client := &Client{
+		conn:        conn,
+		gatewayPipe: g,
 	}
+
+	go client.readHandler(pongTimeout)
+	go client.writeHandler(pingTick)
+}
+
+func (g *Gateway) Inject(c *Client) error { // inject client to channel
+	return nil
+}
+
+func (g *Gateway) Remove(c *Client) error { //  remove client from channel
+	return nil
 }
