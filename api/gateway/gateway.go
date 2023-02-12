@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	pingTick    = 2 * time.Second
+	pingTick    = 10 * time.Second
 	pongTimeout = (pingTick * 19) / 10
 )
 
