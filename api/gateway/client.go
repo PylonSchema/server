@@ -14,9 +14,10 @@ const (
 )
 
 const (
-	MessageHeartbeat  = 0
-	MessageAuthorized = 1
-	MessageData       = 2
+	MessageHeartbeat      = 0
+	MessageAuthentication = 1
+	MessageData           = 2
+	MessageClose          = 10
 )
 
 type pipe interface {
@@ -52,15 +53,22 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		var message Message
 		err := c.conn.ReadJSON(&message)
 		if err != nil {
-			return // need socket read error
+			// need error handle
+			// like websocket.ErrlimitRead
+			return
 		}
 		switch message.Op {
 		case MessageHeartbeat:
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 		case MessageData:
 			c.writeChannel <- &message // reply test
-		case MessageAuthorized:
+		case MessageAuthentication:
 			// message authorized implements
+		case MessageClose:
+			c.writeChannel <- &Message{
+				Op: 10,
+				D:  nil,
+			}
 		}
 
 	}
