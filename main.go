@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/devhoodit/sse-chat/server"
+	"github.com/PylonSchema/server/server"
 )
 
 func main() {

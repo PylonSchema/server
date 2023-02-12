@@ -79,6 +79,36 @@ func (j *JwtAuth) ParseToken(c *gin.Context, claims *AuthTokenClaims) (*jwt.Toke
 	return jwtToken, nil
 }
 
+func (j *JwtAuth) AuthorizeToken(tokenString string) (*AuthTokenClaims, error) {
+	claims := &AuthTokenClaims{}
+	jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(j.Secret), nil
+	})
+	if err != nil {
+		return claims, err
+	}
+
+	// check token is valid
+	if !jwtToken.Valid {
+		return claims, jwt.ErrTokenMalformed
+	}
+
+	isExpired := claims.isExpired()
+	if isExpired {
+		return claims, jwt.ErrTokenExpired
+	}
+
+	// check blacklist
+	isBlacklist, err := j.Store.IsBlacklist(tokenString)
+	if err != nil {
+		return claims, err
+	}
+	if isBlacklist {
+		return claims, ErrTokenBlacklist
+	}
+	return claims, nil
+}
+
 func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := c.Request.Cookie("token")
@@ -97,47 +127,30 @@ func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 
 		// parse cookie
 		tokenString := token.Value
-		claims := &AuthTokenClaims{}
-		jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(j.Secret), nil
-		})
+
+		_, err = j.AuthorizeToken(tokenString)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "internal server error",
-			})
-			return
-		}
-
-		// check token is valid
-		if !jwtToken.Valid {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"message": "token is invalid",
-			})
-			return
-		}
-
-		isExpired := claims.isExpired()
-		if isExpired {
-			// refresh token managed by another api
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "token is expired",
-			})
-			return
-		}
-
-		// check blacklist
-		isBlacklist, err := j.Store.IsBlacklist(tokenString)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-				"message": "server error",
-			})
-			return
-		}
-		if isBlacklist {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
-				"message": "token is expired",
-			})
-			return
+			if err == ErrTokenInValid {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"message": "internal server error",
+				})
+				return
+			} else if err == ErrTokenExpired {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"message": "token is expired",
+				})
+				return
+			} else if err == ErrTokenBlacklist {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"message": "token is expired",
+				})
+				return
+			} else {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"message": "internal server error",
+				})
+				return
+			}
 		}
 		c.Next()
 	}

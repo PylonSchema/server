@@ -3,8 +3,8 @@ package github
 import (
 	"net/http"
 
-	"github.com/devhoodit/sse-chat/auth"
-	"github.com/devhoodit/sse-chat/model"
+	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/model"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -77,7 +77,7 @@ func (g *Github) createUser(username string, userId string, email string, token 
 	social := model.Social{
 		SecretUUID:   privateUUID,
 		SocialType:   1, // static account type is github,
-		Id:           userId,
+		SocialId:     userId,
 		AccessToken:  token.AccessToken,
 		RefreshToken: token.RefreshToken, // this will be nil, github has no refresh token
 	}

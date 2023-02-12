@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/devhoodit/sse-chat/model"
+	"github.com/PylonSchema/server/model"
 	_ "github.com/go-sql-driver/mysql"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

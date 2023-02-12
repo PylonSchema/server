@@ -4,11 +4,13 @@ import (
 	"net/http"
 
 	"github.com/BurntSushi/toml"
-	"github.com/devhoodit/sse-chat/auth"
-	githubAuth "github.com/devhoodit/sse-chat/auth/github"
-	"github.com/devhoodit/sse-chat/database"
-	"github.com/devhoodit/sse-chat/store"
+	"github.com/PylonSchema/server/api/gateway"
+	"github.com/PylonSchema/server/auth"
+	githubAuth "github.com/PylonSchema/server/auth/github"
+	"github.com/PylonSchema/server/database"
+	"github.com/PylonSchema/server/store"
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -73,6 +75,23 @@ func SetupRouter() *gin.Engine {
 
 	r.GET("/", func(c *gin.Context) {
 	})
+
+	gateway := &gateway.Gateway{
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool { // origin check for dev, allow all origin
+				return true
+			},
+		},
+	}
+
+	r.GET("/gateway", gateway.OpenGateway)
+
+	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequired())
+	{
+		messageRouter.POST("/")
+	}
 
 	authRouter := r.Group("/auth")
 	{
