@@ -71,7 +71,7 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 	defer c.closeConnection()
 	c.conn.SetReadLimit(2048)
 	c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
-	c.conn.SetPongHandler(func(appData string) error {
+	c.conn.SetPongHandler(func(_ string) error {
 		c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 		return nil
 	})
