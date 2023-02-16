@@ -84,6 +84,7 @@ func SetupRouter() *gin.Engine {
 				return true
 			},
 		},
+		JwtAuth: jwtAuth,
 	}
 
 	r.GET("/gateway", gateway.OpenGateway)

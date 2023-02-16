@@ -1,9 +1,13 @@
 package gateway
 
-func (g *Gateway) Auth(tokenString string) error {
-	_, err := g.jwtAuth.AuthorizeToken(tokenString)
-	if err != nil {
-		return err
-	}
-	return nil
+import (
+	"fmt"
+
+	"github.com/PylonSchema/server/auth"
+)
+
+func (g *Gateway) Auth(tokenString string) (claims *auth.AuthTokenClaims, err error) {
+	fmt.Println(g.JwtAuth)
+	claims, err = g.JwtAuth.AuthorizeToken(tokenString)
+	return
 }

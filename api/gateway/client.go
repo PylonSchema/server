@@ -1,10 +1,10 @@
 package gateway
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
+	"github.com/PylonSchema/server/auth"
 	"github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
 )
@@ -23,7 +23,7 @@ const (
 type pipe interface {
 	Inject(c *Client) error
 	Remove(c *Client) error
-	Auth(tokenString string) error
+	Auth(tokenString string) (*auth.AuthTokenClaims, error)
 }
 
 type Client struct {
@@ -33,38 +33,33 @@ type Client struct {
 	gatewayPipe  pipe
 	username     string // client username
 	uuid         string // client uuid
-	authorized   bool   // client authorized?, client username & uuid is defined after authorized, if not authorized can't do anything
 }
 
 // close socket connection & remove client from gateway
 func (c *Client) closeConnection() {
 	c.once.Do(func() {
-		fmt.Println("connection closed")
+		d := map[string]interface{}{"type": "authorized error"}
+		command, _ := json.Marshal(&Message{
+			Op: 10,
+			D:  d,
+		})
+		c.conn.WriteMessage(websocket.TextMessage, command)
 		c.conn.Close()
 	})
 }
 
 func (c *Client) defineClient(message *Message) {
-	if c.authorized {
-		return
-	}
-	err := c.gatewayPipe.Auth((message.D["token"]).(string))
+	claims, err := c.gatewayPipe.Auth((message.D["token"]).(string))
 	if err != nil {
-		d := map[string]interface{}{"type": "authorized error"}
-		command, err := json.Marshal(&Message{
-			Op: 10,
-			D:  d,
-		})
-		if err != nil {
-			return // need websocket write error
-		}
-		c.conn.WriteMessage(websocket.TextMessage, command)
 		c.closeConnection()
 		return
 	}
-	c.authorized = true
-	c.username = "client username"
-	c.uuid = "client uuid"
+	c.username = claims.Username
+	c.uuid = claims.UserUUID
+}
+
+func (c *Client) GatewayInject() {
+	c.gatewayPipe.Inject(c)
 }
 
 func (c *Client) readHandler(pongTimeout time.Duration) {
@@ -76,6 +71,41 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		return nil
 	})
 
+	// only allow auth, heartbeat, close connection messages
+	for {
+		var message Message
+		var isNext = false
+		err := c.conn.ReadJSON(&message)
+		if err != nil {
+			// need error handle
+			// like websocket.ErrlimitRead
+			return
+		}
+		switch message.Op {
+		case MessageHeartbeat:
+			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
+		case MessageAuthentication:
+			// message authorized implements
+			c.defineClient(&message)
+			c.GatewayInject()
+			isNext = true
+		case MessageClose:
+			command, err := json.Marshal(&Message{
+				Op: 10,
+				D:  nil,
+			})
+			if err != nil {
+				return // need websocket write error
+			}
+			c.conn.WriteMessage(websocket.TextMessage, command)
+			return
+		}
+		if isNext {
+			break
+		}
+	}
+
+	// implement except only authentication
 	for {
 		var message Message
 		err := c.conn.ReadJSON(&message)
@@ -90,9 +120,6 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		case MessageData:
 			c.writeChannel <- &message // reply test
 			// boardcast to channel implements need
-		case MessageAuthentication:
-			// message authorized implements
-			c.defineClient(&message)
 		case MessageClose:
 			command, err := json.Marshal(&Message{
 				Op: 10,
@@ -104,7 +131,6 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 			c.conn.WriteMessage(websocket.TextMessage, command)
 			return
 		}
-
 	}
 }
 

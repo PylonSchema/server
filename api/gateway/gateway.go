@@ -24,7 +24,7 @@ type Gateway struct {
 	Upgrader websocket.Upgrader
 	m        sync.RWMutex
 	channels map[string][]*Client
-	jwtAuth  *auth.JwtAuth
+	JwtAuth  *auth.JwtAuth
 	db       Database
 }
 
@@ -43,7 +43,6 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		conn:         conn,
 		gatewayPipe:  g,
 		writeChannel: make(chan *Message),
-		authorized:   false,
 		username:     "",
 		uuid:         "",
 	}
