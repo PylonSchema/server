@@ -10,7 +10,6 @@ import (
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/store"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -76,16 +75,7 @@ func SetupRouter() *gin.Engine {
 	r.GET("/", func(c *gin.Context) {
 	})
 
-	gateway := &gateway.Gateway{
-		Upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool { // origin check for dev, allow all origin
-				return true
-			},
-		},
-		JwtAuth: jwtAuth,
-	}
+	gateway := gateway.New(jwtAuth)
 
 	r.GET("/gateway", gateway.OpenGateway)
 

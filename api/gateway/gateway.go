@@ -22,10 +22,25 @@ type Database interface {
 
 type Gateway struct {
 	Upgrader websocket.Upgrader
-	m        sync.RWMutex
+	m        *sync.RWMutex
 	channels map[string][]*Client
 	JwtAuth  *auth.JwtAuth
 	db       Database
+}
+
+func New(jwtAuth *auth.JwtAuth) *Gateway {
+	return &Gateway{
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool { // origin check for dev, allow all origin
+				return true
+			},
+		},
+		JwtAuth:  jwtAuth,
+		channels: make(map[string][]*Client),
+		m:        new(sync.RWMutex),
+	}
 }
 
 func (g *Gateway) OpenGateway(c *gin.Context) {
