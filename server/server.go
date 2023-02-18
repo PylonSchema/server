@@ -84,6 +84,11 @@ func SetupRouter() *gin.Engine {
 		messageRouter.POST("/")
 	}
 
+	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequired())
+	{
+		userRouter.GET("/channel")
+	}
+
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequired())
 	{
 		channelRouter.POST("")
