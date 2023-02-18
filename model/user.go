@@ -7,6 +7,7 @@ import (
 )
 
 type User struct {
+	ID          uint `gorm:"primaryKey;autoIncrement:true"`
 	Username    string
 	AccountType int
 	UUID        uuid.UUID

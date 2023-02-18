@@ -10,7 +10,6 @@ import (
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/store"
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
@@ -76,15 +75,7 @@ func SetupRouter() *gin.Engine {
 	r.GET("/", func(c *gin.Context) {
 	})
 
-	gateway := &gateway.Gateway{
-		Upgrader: websocket.Upgrader{
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-			CheckOrigin: func(r *http.Request) bool { // origin check for dev, allow all origin
-				return true
-			},
-		},
-	}
+	gateway := gateway.New(jwtAuth)
 
 	r.GET("/gateway", gateway.OpenGateway)
 
@@ -106,8 +97,14 @@ func SetupRouter() *gin.Engine {
 			github.GET("/callback", githubRouter.Callback)
 		}
 		authRouter.Use(jwtAuth.AuthorizeRequired()).GET("/token", func(ctx *gin.Context) {
+			t, e := ctx.Cookie("token")
+			if e != nil {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"token": "internal server error",
+				})
+			}
 			ctx.AbortWithStatusJSON(http.StatusOK, gin.H{
-				"message": "token is vaild",
+				"token": t,
 			})
 		})
 		authRouter.GET("/blacklist", auth.Blacklist)

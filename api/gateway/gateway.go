@@ -17,15 +17,30 @@ const (
 )
 
 type Database interface {
-	GetChannel(uuid string)
+	GetChannelsByUserUUID(uuid string)
 }
 
 type Gateway struct {
 	Upgrader websocket.Upgrader
-	m        sync.RWMutex
+	m        *sync.RWMutex
 	channels map[string][]*Client
-	jwtAuth  *auth.JwtAuth
+	JwtAuth  *auth.JwtAuth
 	db       Database
+}
+
+func New(jwtAuth *auth.JwtAuth) *Gateway {
+	return &Gateway{
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool { // origin check for dev, allow all origin
+				return true
+			},
+		},
+		JwtAuth:  jwtAuth,
+		channels: make(map[string][]*Client),
+		m:        new(sync.RWMutex),
+	}
 }
 
 func (g *Gateway) OpenGateway(c *gin.Context) {
@@ -43,7 +58,6 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		conn:         conn,
 		gatewayPipe:  g,
 		writeChannel: make(chan *Message),
-		authorized:   false,
 		username:     "",
 		uuid:         "",
 	}
