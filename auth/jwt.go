@@ -128,7 +128,7 @@ func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 		// parse cookie
 		tokenString := token.Value
 
-		_, err = j.AuthorizeToken(tokenString)
+		claims, err := j.AuthorizeToken(tokenString)
 		if err != nil {
 			if err == ErrTokenInValid {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -152,6 +152,7 @@ func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 				return
 			}
 		}
+		c.Set("claims", claims)
 		c.Next()
 	}
 }
