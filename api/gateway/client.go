@@ -62,6 +62,10 @@ func (c *Client) GatewayInject() {
 	c.gatewayPipe.Inject(c)
 }
 
+func (c *Client) GatewayRemove() {
+	c.gatewayPipe.Remove(c)
+}
+
 func (c *Client) readHandler(pongTimeout time.Duration) {
 	defer c.closeConnection()
 	c.conn.SetReadLimit(2048)
@@ -87,7 +91,6 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		case MessageAuthentication:
 			// message authorized implements
 			c.defineClient(&message)
-			c.GatewayInject()
 			isNext = true
 		case MessageClose:
 			command, err := json.Marshal(&Message{
@@ -104,6 +107,8 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 			break
 		}
 	}
+
+	c.GatewayInject() // inject client in gateway
 
 	// implement except only authentication
 	for {

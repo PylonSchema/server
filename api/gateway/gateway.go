@@ -17,7 +17,7 @@ const (
 )
 
 type Database interface {
-	GetChannel(uuid string)
+	GetChannelsByUserUUID(uuid string)
 }
 
 type Gateway struct {
