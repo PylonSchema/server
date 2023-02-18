@@ -97,8 +97,14 @@ func SetupRouter() *gin.Engine {
 			github.GET("/callback", githubRouter.Callback)
 		}
 		authRouter.Use(jwtAuth.AuthorizeRequired()).GET("/token", func(ctx *gin.Context) {
+			t, e := ctx.Cookie("token")
+			if e != nil {
+				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+					"token": "internal server error",
+				})
+			}
 			ctx.AbortWithStatusJSON(http.StatusOK, gin.H{
-				"message": "token is vaild",
+				"token": t,
 			})
 		})
 		authRouter.GET("/blacklist", auth.Blacklist)

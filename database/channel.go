@@ -3,4 +3,6 @@ package database
 type Channel struct {
 }
 
-func (d *GormDatabase) GetChannelsByUserUUID()
+func (d *GormDatabase) GetChannelsByUserUUID() {
+
+}

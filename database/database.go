@@ -43,7 +43,10 @@ func New(username string, password string, address string, port string) (*GormDa
 
 func (g *GormDatabase) AutoMigration() error {
 
-	err := g.DB.AutoMigrate(&model.User{}, &model.Origin{}, &model.Social{})
+	err := g.DB.AutoMigrate(
+		&model.User{}, &model.Origin{}, &model.Social{},
+		&model.Channel{}, &model.ChannelMember{},
+	)
 	if err != nil {
 		panic(err)
 	}
