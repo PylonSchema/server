@@ -5,9 +5,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Channel struct {
-}
-
 func (d *GormDatabase) CreateChannel(channel *model.Channel) error {
 	return d.DB.Create(channel).Error
 }
@@ -33,6 +30,6 @@ func (d *GormDatabase) InjectUserByChannelId(user *model.User, channelId uint) e
 }
 
 func (d *GormDatabase) RemoveUserByChannelId(user *model.User, channelId uint) error {
-	err := d.DB.Where("channel_id = ? AND secret_uuid = ?", channelId, user.SecretUUID).Delete(&model.ChannelMember{}).Error
+	err := d.DB.Where("channel_id = ? AND uuid = ?", channelId, user.UUID).Delete(&model.ChannelMember{}).Error
 	return err
 }

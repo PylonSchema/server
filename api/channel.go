@@ -82,7 +82,11 @@ func (a *ChannelAPI) CreateChannel(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel model error"})
 		return
 	}
-	a.DB.CreateChannel(channelModel)
+	err = a.DB.CreateChannel(channelModel)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel error"})
+		return
+	}
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
@@ -122,4 +126,9 @@ func (a *ChannelAPI) GetChannelIds(c *gin.Context) {
 func (a *ChannelAPI) JoinChannel(c *gin.Context) {
 	// claims := c.MustGet("token").(auth.AuthTokenClaims)
 	// uuid := claims.UserUUID
+}
+
+// remove user from channel
+func (a *ChannelAPI) RemoveUser(c *gin.Context) {
+	//
 }
