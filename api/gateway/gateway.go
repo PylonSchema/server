@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/model"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -18,13 +19,13 @@ const (
 )
 
 type Database interface {
-	GetChannelsByUserUUID(uuid string)
+	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error)
 }
 
 type Gateway struct {
 	Upgrader websocket.Upgrader
 	m        *sync.RWMutex
-	channels map[string][]*Client
+	channels map[uint][]*Client
 	JwtAuth  *auth.JwtAuth
 	db       Database
 }
@@ -39,7 +40,7 @@ func New(jwtAuth *auth.JwtAuth) *Gateway {
 			},
 		},
 		JwtAuth:  jwtAuth,
-		channels: make(map[string][]*Client),
+		channels: make(map[uint][]*Client),
 		m:        new(sync.RWMutex),
 	}
 }
@@ -68,9 +69,35 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 }
 
 func (g *Gateway) Inject(c *Client) error { // inject client to channel
+	channels, err := g.db.GetChannelsByUserUUID(c.uuid)
+	if err != nil {
+		return err
+	}
+	g.m.Lock()
+	defer g.m.Unlock()
+
+	for _, channel := range *channels {
+		g.channels[channel.Id] = append(g.channels[channel.Id], c)
+	}
 	return nil
 }
 
 func (g *Gateway) Remove(c *Client) error { //  remove client from channel
+	channels, err := g.db.GetChannelsByUserUUID(c.uuid)
+	if err != nil {
+		return err
+	}
+	g.m.Lock()
+	defer g.m.Unlock()
+
+	for _, channel := range *channels {
+		for i, client := range g.channels[channel.Id] {
+			if client != c {
+				continue
+			}
+			g.channels[channel.Id] = append(g.channels[channel.Id][:i], g.channels[channel.Id][i+1:]...)
+			break
+		}
+	}
 	return nil
 }
