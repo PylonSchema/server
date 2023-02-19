@@ -9,7 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type Database interface {
+type ChannelDatabase interface {
 	CreateChannel(channel *model.Channel) error
 	RemoveChannel(channelId uint) error
 	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error)
@@ -18,7 +18,7 @@ type Database interface {
 }
 
 type ChannelAPI struct {
-	DB Database
+	DB ChannelDatabase
 }
 
 type createChannelPayload struct {

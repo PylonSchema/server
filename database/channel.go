@@ -3,6 +3,7 @@ package database
 import (
 	"github.com/PylonSchema/server/model"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 func (d *GormDatabase) CreateChannel(channel *model.Channel) error {
@@ -22,7 +23,7 @@ func (d *GormDatabase) GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, 
 
 func (d *GormDatabase) InjectUserByChannelId(user *model.User, channelId uint) error {
 	channelMember := model.ChannelMember{
-		ChannelId: uint(channelId),
+		ChannelId: channelId,
 		UUID:      user.UUID,
 	}
 	err := d.DB.Create(&channelMember).Error
@@ -32,4 +33,16 @@ func (d *GormDatabase) InjectUserByChannelId(user *model.User, channelId uint) e
 func (d *GormDatabase) RemoveUserByChannelId(user *model.User, channelId uint) error {
 	err := d.DB.Where("channel_id = ? AND uuid = ?", channelId, user.UUID).Delete(&model.ChannelMember{}).Error
 	return err
+}
+
+func (d *GormDatabase) IsUserInChannelByUUID(user *model.User, channelId uint) (bool, error) {
+	channelMember := new(model.ChannelMember)
+	err := d.DB.Where("channel_id = ? AND uuid = ?", channelId, user.UUID).Find(channelMember).Error
+	if err == gorm.ErrRecordNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }

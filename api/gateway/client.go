@@ -124,8 +124,7 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		case MessageHeartbeat:
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 		case MessageData:
-			c.writeChannel <- &message // reply test
-			// boardcast to channel implements need
+			c.writeChannel <- &message // reply test, message boardcast implement will be add in POST api request
 		case MessageClose:
 			command, err := json.Marshal(&Message{
 				Op: 10,
@@ -149,7 +148,7 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 
 	for {
 		select {
-		case message := <-c.writeChannel:
+		case message := <-c.writeChannel: // this channel message will be triggered by message POST api
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
 			command, err := json.Marshal(message)
 			if err != nil {
