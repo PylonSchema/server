@@ -10,9 +10,10 @@ type Channel struct {
 	Id        uint `gorm:"primaryKey;autoIncrement:true"`
 	Name      string
 	UUID      uuid.UUID
+	Owner     uuid.UUID
 	CreatedAt time.Time       `grom:"autoCreateTime"`
 	UpdatedAt time.Time       `gorm:"autoUpdateTime"`
-	Members   []ChannelMember `gorm:"foreignKey:ChannelId;References:Id;OnUpdate:CASCADE"`
+	Members   []ChannelMember `gorm:"foreignKey:ChannelId;References:Id;constraint:OnDelete:CASCADE"`
 }
 
 type ChannelMember struct {
