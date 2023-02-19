@@ -6,6 +6,7 @@ import (
 
 	"github.com/PylonSchema/server/auth"
 	"github.com/goccy/go-json"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -31,8 +32,8 @@ type Client struct {
 	once         sync.Once
 	writeChannel chan *Message
 	gatewayPipe  pipe
-	username     string // client username
-	uuid         string // client uuid
+	username     string    // client username
+	uuid         uuid.UUID // client uuid
 }
 
 // close socket connection & remove client from gateway

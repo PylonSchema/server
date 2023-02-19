@@ -8,6 +8,7 @@ import (
 
 	"github.com/PylonSchema/server/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -59,7 +60,7 @@ func (g *Gateway) OpenGateway(c *gin.Context) {
 		gatewayPipe:  g,
 		writeChannel: make(chan *Message),
 		username:     "",
-		uuid:         "",
+		uuid:         uuid.UUID{},
 	}
 
 	go client.readHandler(pongTimeout)

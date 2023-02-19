@@ -1,6 +1,9 @@
 package database
 
-import "github.com/PylonSchema/server/model"
+import (
+	"github.com/PylonSchema/server/model"
+	"github.com/google/uuid"
+)
 
 type Channel struct {
 }
@@ -14,7 +17,7 @@ func (d *GormDatabase) RemoveChannel(channelId uint) error {
 	return err
 }
 
-func (d *GormDatabase) GetChannelsByUserUUID(uuid string) (*[]model.Channel, error) {
+func (d *GormDatabase) GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error) {
 	var channels []model.Channel
 	err := d.DB.Where("uuid = ?", uuid).Find(&channels).Error
 	return &channels, err
@@ -22,9 +25,8 @@ func (d *GormDatabase) GetChannelsByUserUUID(uuid string) (*[]model.Channel, err
 
 func (d *GormDatabase) InjectUserByChannelId(user *model.User, channelId uint) error {
 	channelMember := model.ChannelMember{
-		ChannelId:  uint(channelId),
-		UUID:       user.UUID,
-		SecretUUID: user.SecretUUID,
+		ChannelId: uint(channelId),
+		UUID:      user.UUID,
 	}
 	err := d.DB.Create(&channelMember).Error
 	return err

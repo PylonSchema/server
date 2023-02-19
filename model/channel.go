@@ -17,7 +17,6 @@ type Channel struct {
 }
 
 type ChannelMember struct {
-	ChannelId  uint `gorm:"index"`
-	UUID       uuid.UUID
-	SecretUUID uuid.UUID
+	ChannelId uint `gorm:"index"`
+	UUID      uuid.UUID
 }
