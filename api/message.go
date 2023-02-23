@@ -5,6 +5,7 @@ import (
 
 	"github.com/PylonSchema/server/api/gateway"
 	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/database"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -23,6 +24,13 @@ type MessageAPI struct {
 	DB MessageDatabase
 }
 
+func NewMessageAPI(gateway *gateway.Gateway, db *database.GormDatabase) *MessageAPI {
+	return &MessageAPI{
+		g:  gateway,
+		DB: db,
+	}
+}
+
 func (a *MessageAPI) CreateMessage(c *gin.Context) {
 	messagePayload := &MessagePayload{}
 	err := c.Bind(&messagePayload)
@@ -32,7 +40,7 @@ func (a *MessageAPI) CreateMessage(c *gin.Context) {
 		})
 		return
 	}
-	claims := c.MustGet("claims").(auth.AuthTokenClaims)
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	find, err := a.DB.IsUserInChannelByUUID(claims.UserUUID, messagePayload.ChannelId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{

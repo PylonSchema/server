@@ -1,13 +1,13 @@
 package gateway
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/model"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -20,7 +20,7 @@ const (
 )
 
 type Database interface {
-	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error)
+	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.ChannelMember, error)
 }
 
 type Gateway struct {
@@ -31,7 +31,7 @@ type Gateway struct {
 	db       Database
 }
 
-func New(jwtAuth *auth.JwtAuth) *Gateway {
+func New(jwtAuth *auth.JwtAuth, db *database.GormDatabase) *Gateway {
 	return &Gateway{
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -43,6 +43,7 @@ func New(jwtAuth *auth.JwtAuth) *Gateway {
 		JwtAuth:  jwtAuth,
 		channels: make(map[uint][]*Client),
 		m:        new(sync.RWMutex),
+		db:       db,
 	}
 }
 
@@ -78,7 +79,7 @@ func (g *Gateway) Inject(c *Client) error { // inject client to channel
 	defer g.m.Unlock()
 
 	for _, channel := range *channels {
-		g.channels[channel.Id] = append(g.channels[channel.Id], c)
+		g.channels[channel.ChannelId] = append(g.channels[channel.ChannelId], c)
 	}
 	return nil
 }
@@ -92,11 +93,11 @@ func (g *Gateway) Remove(c *Client) error { //  remove client from channel
 	defer g.m.Unlock()
 
 	for _, channel := range *channels {
-		for i, client := range g.channels[channel.Id] {
+		for i, client := range g.channels[channel.ChannelId] {
 			if client != c {
 				continue
 			}
-			g.channels[channel.Id] = append(g.channels[channel.Id][:i], g.channels[channel.Id][i+1:]...)
+			g.channels[channel.ChannelId] = append(g.channels[channel.ChannelId][:i], g.channels[channel.ChannelId][i+1:]...)
 			break
 		}
 	}
@@ -108,7 +109,7 @@ func (g *Gateway) Boardcast(channelId uint, message *Message) error {
 	defer g.m.RUnlock()
 	clients, ok := g.channels[channelId]
 	if !ok {
-		return errors.New("boardcast error no valid channel id")
+		return nil
 	}
 	for _, client := range clients {
 		client.writeChannel <- message

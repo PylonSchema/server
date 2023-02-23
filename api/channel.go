@@ -12,7 +12,7 @@ import (
 type ChannelDatabase interface {
 	CreateChannel(channel *model.Channel) error
 	RemoveChannel(channelId uint) error
-	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error)
+	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.ChannelMember, error)
 	InjectUserByChannelId(user *model.User, channelId uint) error
 	RemoveUserByChannelId(user *model.User, channelId uint) error
 }
@@ -22,8 +22,8 @@ type ChannelAPI struct {
 }
 
 type createChannelPayload struct {
-	name    string
-	members []string
+	Name    string   `json:"name" binding:"required"`
+	Members []string `json:"members" binding:"required"`
 }
 
 type ChannelPayload struct {
@@ -37,7 +37,7 @@ func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uui
 	}
 	membersSet := make(map[uuid.UUID]struct{})
 	members := make([]model.ChannelMember, 0)
-	for _, member := range payload.members {
+	for _, member := range payload.Members {
 		memberUUID, err := uuid.Parse(member)
 		if err != nil {
 			continue
@@ -57,7 +57,7 @@ func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uui
 		UUID: owner,
 	})
 	model := &model.Channel{
-		Name:    payload.name,
+		Name:    payload.Name,
 		UUID:    channelUUID,
 		Owner:   owner,
 		Members: members,
@@ -66,7 +66,7 @@ func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uui
 }
 
 func (a *ChannelAPI) CreateChannel(c *gin.Context) {
-	claims := c.MustGet("token").(auth.AuthTokenClaims)
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
 
 	var payload createChannelPayload
@@ -76,7 +76,7 @@ func (a *ChannelAPI) CreateChannel(c *gin.Context) {
 		return
 	}
 
-	payload.members = append(payload.members, uuid.String())
+	payload.Members = append(payload.Members, uuid.String())
 	channelModel, err := a.createChannelModel(&payload, uuid)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel model error"})
@@ -106,7 +106,7 @@ func (a *ChannelAPI) RemoveChannel(c *gin.Context) {
 }
 
 func (a *ChannelAPI) GetChannelIds(c *gin.Context) {
-	claims := c.MustGet("token").(auth.AuthTokenClaims)
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
 	channels, err := a.DB.GetChannelsByUserUUID(uuid)
 	if err != nil {
@@ -115,7 +115,7 @@ func (a *ChannelAPI) GetChannelIds(c *gin.Context) {
 	}
 	channelId := make([]uint, 0)
 	for _, channel := range *channels {
-		channelId = append(channelId, channel.Id)
+		channelId = append(channelId, channel.ChannelId)
 	}
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{
 		"channel": channelId,

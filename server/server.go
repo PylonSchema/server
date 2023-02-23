@@ -81,13 +81,15 @@ func SetupRouter() *gin.Engine {
 	r.GET("/", func(c *gin.Context) {
 	})
 
-	gateway := gateway.New(jwtAuth)
+	gateway := gateway.New(jwtAuth, d)
 
 	r.GET("/gateway", gateway.OpenGateway)
 
+	messageAPI := api.NewMessageAPI(gateway, d)
+
 	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequired())
 	{
-		messageRouter.POST("/")
+		messageRouter.POST("/", messageAPI.CreateMessage)
 	}
 
 	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequired())

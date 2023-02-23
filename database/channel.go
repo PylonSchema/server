@@ -15,10 +15,10 @@ func (d *GormDatabase) RemoveChannel(channelId uint) error {
 	return err
 }
 
-func (d *GormDatabase) GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.Channel, error) {
-	var channels []model.Channel
-	err := d.DB.Where("uuid = ?", uuid).Find(&channels).Error
-	return &channels, err
+func (d *GormDatabase) GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.ChannelMember, error) {
+	var channelMembers []model.ChannelMember
+	err := d.DB.Where("uuid = ?", uuid).Find(&channelMembers).Error
+	return &channelMembers, err
 }
 
 func (d *GormDatabase) InjectUserByChannelId(user *model.User, channelId uint) error {
