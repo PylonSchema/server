@@ -67,7 +67,7 @@ func (g *Github) Callback(c *gin.Context) {
 	}
 
 	jp := auth.JwtPayload{
-		UserUUID: user.UUID.String(),
+		UserUUID: user.UUID,
 		Username: user.Username,
 	}
 	jwtTokenString, err := g.JwtAuth.GenerateJWT(&jp)

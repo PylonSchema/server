@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/BurntSushi/toml"
+	"github.com/PylonSchema/server/api"
 	"github.com/PylonSchema/server/api/gateway"
 	"github.com/PylonSchema/server/auth"
 	githubAuth "github.com/PylonSchema/server/auth/github"
@@ -70,18 +71,25 @@ func SetupRouter() *gin.Engine {
 			RedirectURL:  conf.Oauth["github"].Redirect,
 			Scopes:       []string{"user:email"},
 			Endpoint:     github.Endpoint,
-		}}
+		},
+	}
+
+	channelAPI := api.ChannelAPI{
+		DB: d,
+	}
 
 	r.GET("/", func(c *gin.Context) {
 	})
 
-	gateway := gateway.New(jwtAuth)
+	gateway := gateway.New(jwtAuth, d)
 
 	r.GET("/gateway", gateway.OpenGateway)
 
+	messageAPI := api.NewMessageAPI(gateway, d)
+
 	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequired())
 	{
-		messageRouter.POST("/")
+		messageRouter.POST("/", messageAPI.CreateMessage)
 	}
 
 	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequired())
@@ -91,8 +99,10 @@ func SetupRouter() *gin.Engine {
 
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequired())
 	{
-		channelRouter.POST("")
-		channelRouter.POST("join/:id")
+		channelRouter.GET("/", channelAPI.GetChannelIds)        // get channel ids
+		channelRouter.POST("/", channelAPI.CreateChannel)       // create channel
+		channelRouter.DELETE("/", channelAPI.RemoveChannel)     // delete channel
+		channelRouter.POST("/join/:id", channelAPI.JoinChannel) // join channel
 	}
 
 	authRouter := r.Group("/auth")

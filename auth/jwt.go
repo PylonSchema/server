@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/google/uuid"
 )
 
 type Database interface {
@@ -26,14 +27,14 @@ type JwtAuth struct {
 }
 
 type JwtPayload struct {
-	UserUUID string
+	UserUUID uuid.UUID
 	Username string
 }
 
 type AuthTokenClaims struct {
-	UserUUID     string `json:"uid"`
-	Username     string `json:"username"`
-	RefreshToken string `json:"refresh_token"`
+	UserUUID     uuid.UUID `json:"uid"`
+	Username     string    `json:"username"`
+	RefreshToken string    `json:"refresh_token"`
 	jwt.RegisteredClaims
 }
 
@@ -128,7 +129,7 @@ func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 		// parse cookie
 		tokenString := token.Value
 
-		_, err = j.AuthorizeToken(tokenString)
+		claims, err := j.AuthorizeToken(tokenString)
 		if err != nil {
 			if err == ErrTokenInValid {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -152,6 +153,7 @@ func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
 				return
 			}
 		}
+		c.Set("claims", claims)
 		c.Next()
 	}
 }
