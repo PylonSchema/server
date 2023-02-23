@@ -53,5 +53,14 @@ func (a *MessageAPI) CreateMessage(c *gin.Context) {
 		Op: gateway.MessageData,
 		D:  data,
 	}
-	a.g.Boardcast(messagePayload.ChannelId, message)
+	err = a.g.Boardcast(messagePayload.ChannelId, message)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": "boardcast message to gateway error",
+		})
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusCreated, gin.H{
+		"message": "message successfully created",
+	})
 }
