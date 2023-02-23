@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/PylonSchema/server/database"
+	"github.com/PylonSchema/server/store"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
@@ -23,7 +25,7 @@ type Store interface {
 type JwtAuth struct {
 	DB     Database
 	Store  Store
-	Secret string
+	secret string
 }
 
 type JwtPayload struct {
@@ -36,6 +38,14 @@ type AuthTokenClaims struct {
 	Username     string    `json:"username"`
 	RefreshToken string    `json:"refresh_token"`
 	jwt.RegisteredClaims
+}
+
+func NewJwtAuth(db *database.GormDatabase, store *store.StoreDatabase, secret string) *JwtAuth {
+	return &JwtAuth{
+		DB:     db,
+		Store:  store,
+		secret: secret,
+	}
 }
 
 func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
@@ -56,7 +66,7 @@ func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	tokenString, err := token.SignedString([]byte(j.Secret))
+	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {
 		fmt.Println("jwt signed string error")
 		return "", err
@@ -72,7 +82,7 @@ func (j *JwtAuth) ParseToken(c *gin.Context, claims *AuthTokenClaims) (*jwt.Toke
 	// parse cookie
 	tokenString := token.Value
 	jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(j.Secret), nil
+		return []byte(j.secret), nil
 	})
 	if err != nil {
 		return nil, err
@@ -83,7 +93,7 @@ func (j *JwtAuth) ParseToken(c *gin.Context, claims *AuthTokenClaims) (*jwt.Toke
 func (j *JwtAuth) AuthorizeToken(tokenString string) (*AuthTokenClaims, error) {
 	claims := &AuthTokenClaims{}
 	jwtToken, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(j.Secret), nil
+		return []byte(j.secret), nil
 	})
 	if err != nil {
 		return claims, err
