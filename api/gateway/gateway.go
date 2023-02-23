@@ -85,14 +85,14 @@ func (g *Gateway) Inject(c *Client) error { // inject client to channel
 }
 
 func (g *Gateway) Remove(c *Client) error { //  remove client from channel
-	channels, err := g.db.GetChannelsByUserUUID(c.uuid)
+	channelMembers, err := g.db.GetChannelsByUserUUID(c.uuid)
 	if err != nil {
 		return err
 	}
 	g.m.Lock()
 	defer g.m.Unlock()
 
-	for _, channel := range *channels {
+	for _, channel := range *channelMembers {
 		for i, client := range g.channels[channel.ChannelId] {
 			if client != c {
 				continue
