@@ -46,5 +46,12 @@ func (a *MessageAPI) CreateMessage(c *gin.Context) {
 		})
 		return
 	}
-	a.g.Boardcast(messagePayload.ChannelId)
+	data := map[string]interface{}{
+		"data": messagePayload.Content,
+	}
+	message := &gateway.Message{
+		Op: gateway.MessageData,
+		D:  data,
+	}
+	a.g.Boardcast(messagePayload.ChannelId, message)
 }
