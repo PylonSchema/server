@@ -35,9 +35,9 @@ func (d *GormDatabase) RemoveUserByChannelId(user *model.User, channelId uint) e
 	return err
 }
 
-func (d *GormDatabase) IsUserInChannelByUUID(user *model.User, channelId uint) (bool, error) {
+func (d *GormDatabase) IsUserInChannelByUUID(userUUID uuid.UUID, channelId uint) (bool, error) {
 	channelMember := new(model.ChannelMember)
-	err := d.DB.Where("channel_id = ? AND uuid = ?", channelId, user.UUID).Find(channelMember).Error
+	err := d.DB.Where("channel_id = ? AND uuid = ?", channelId, userUUID.String()).Find(channelMember).Error
 	if err == gorm.ErrRecordNotFound {
 		return false, nil
 	}

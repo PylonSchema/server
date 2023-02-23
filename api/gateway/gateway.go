@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -98,6 +99,19 @@ func (g *Gateway) Remove(c *Client) error { //  remove client from channel
 			g.channels[channel.Id] = append(g.channels[channel.Id][:i], g.channels[channel.Id][i+1:]...)
 			break
 		}
+	}
+	return nil
+}
+
+func (g *Gateway) Boardcast(channelId uint, message *Message) error {
+	g.m.RLock()
+	defer g.m.RUnlock()
+	clients, ok := g.channels[channelId]
+	if !ok {
+		return errors.New("boardcast error no valid channel id")
+	}
+	for _, client := range clients {
+		client.writeChannel <- message
 	}
 	return nil
 }
