@@ -51,11 +51,7 @@ func SetupRouter() *gin.Engine {
 	// MiddleWare setting, server/middleware.go
 	setMiddleWare(r, &conf)
 
-	jwtAuth := &auth.JwtAuth{
-		Secret: conf.Secret.Jwtkey,
-		DB:     d,
-		Store:  store,
-	}
+	jwtAuth := auth.NewJwtAuth(d, store, conf.Secret.Jwtkey)
 
 	auth := &auth.Auth{
 		JwtAuth: jwtAuth,

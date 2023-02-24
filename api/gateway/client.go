@@ -15,10 +15,12 @@ const (
 )
 
 const (
-	MessageHeartbeat      = 0
-	MessageAuthentication = 1
-	MessageData           = 2
-	MessageClose          = 10
+	MessageHeartbeat      = 0  // check websocket alive
+	MessageAuthentication = 1  // check authentication
+	MessageData           = 2  // payload is data (message etc.)
+	MessageEvent          = 8  // event message (change of user or user check notification, authorized etc.)
+	MessageError          = 9  // error occur in several reason (authentication error, websocket write length err etc.)
+	MessageClose          = 10 // websocket close
 )
 
 type pipe interface {
@@ -59,8 +61,8 @@ func (c *Client) defineClient(message *Message) {
 	c.uuid = claims.UserUUID
 }
 
-func (c *Client) GatewayInject() {
-	c.gatewayPipe.Inject(c)
+func (c *Client) GatewayInject() error {
+	return c.gatewayPipe.Inject(c)
 }
 
 func (c *Client) GatewayRemove() {
@@ -109,7 +111,22 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		}
 	}
 
-	c.GatewayInject() // inject client in gateway
+	err := c.GatewayInject() // inject client in gateway
+	if err != nil {
+		c.syncMessageWrite(&map[string]interface{}{
+			"Op": MessageError,
+			"d": map[string]interface{}{
+				"code":    0, // this is sample code, need change follow protocol rule ---------------------------------------
+				"message": "gateway inject error",
+			},
+		})
+		return
+	}
+	// authorized
+	c.syncMessageWrite(&map[string]interface{}{
+		"Op": MessageEvent,
+		"d":  "",
+	})
 
 	// implement except only authentication
 	for {
@@ -123,15 +140,13 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		switch message.Op {
 		case MessageHeartbeat:
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
-		case MessageData:
-			c.writeChannel <- &message // reply test, message boardcast implement will be add in POST api request
 		case MessageClose:
 			command, err := json.Marshal(&Message{
 				Op: 10,
 				D:  nil,
 			})
 			if err != nil {
-				return // need websocket write error
+				return
 			}
 			c.conn.WriteMessage(websocket.TextMessage, command)
 			return
@@ -148,15 +163,16 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 
 	for {
 		select {
-		case message := <-c.writeChannel: // this channel message will be triggered by message POST api
+		case message := <-c.writeChannel:
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
 			command, err := json.Marshal(message)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message marshal error, internal server error")
+				return
 			}
 			err = c.conn.WriteMessage(websocket.TextMessage, command)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message write error, internal server error")
 			}
 		case <-pingTicker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
@@ -166,13 +182,32 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 			}
 			command, err := json.Marshal(pingMessage)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message marshal error, internal server error")
+				return
 			}
 			err = c.conn.WriteMessage(websocket.TextMessage, command)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message write error, internal server error")
+				return
 			}
 		}
 	}
 
+}
+
+func (c *Client) syncErrorMessageWrite(code int, errorMessage string) error {
+	err := c.syncMessageWrite(&map[string]interface{}{
+		"Op": MessageError,
+		"d":  map[string]interface{}{"code": code, "data": errorMessage},
+	})
+	return err
+}
+
+func (c *Client) syncMessageWrite(data *map[string]interface{}) error {
+	command, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	c.conn.WriteMessage(websocket.TextMessage, command)
+	return nil
 }
