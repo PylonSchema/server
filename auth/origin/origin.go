@@ -14,6 +14,7 @@ import (
 
 type Database interface {
 	CreateOriginUser(user *model.User, origin *model.Origin) error
+	IsEmailUsed(email string) (bool, error)
 }
 
 type AuthOriginAPI struct {
@@ -67,6 +68,21 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 		})
 		return
 	}
+
+	isEmailUsed, err := a.DB.IsEmailUsed(createPayload.Email)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": "query db error",
+		})
+		return
+	}
+	if isEmailUsed {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+			"error": "email already used",
+		})
+		return
+	}
+
 	err = a.DB.CreateOriginUser(userModel, originModel)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
@@ -77,6 +93,10 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+}
+
+func (a *AuthOriginAPI) LoginAccountHandler(c *gin.Context) {
+
 }
 
 func (c *createPayload) createModel(hashedPassword string) (*model.User, *model.Origin, error) {
