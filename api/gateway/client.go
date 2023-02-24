@@ -18,6 +18,7 @@ const (
 	MessageHeartbeat      = 0  // check websocket alive
 	MessageAuthentication = 1  // check authentication
 	MessageData           = 2  // payload is data (message etc.)
+	MessageEvent          = 8  // event message (change of user or user check notification, authorized etc.)
 	MessageError          = 9  // error occur in several reason (authentication error, websocket write length err etc.)
 	MessageClose          = 10 // websocket close
 )
@@ -112,8 +113,20 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 
 	err := c.GatewayInject() // inject client in gateway
 	if err != nil {
-		c.syncMessageWrite()
+		c.syncMessageWrite(&map[string]interface{}{
+			"Op": MessageError,
+			"d": map[string]interface{}{
+				"code":    0, // this is sample code, need change follow protocol rule ---------------------------------------
+				"message": "gateway inject error",
+			},
+		})
+		return
 	}
+	// authorized
+	c.syncMessageWrite(&map[string]interface{}{
+		"Op": MessageEvent,
+		"d":  "",
+	})
 
 	// implement except only authentication
 	for {
