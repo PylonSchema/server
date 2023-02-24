@@ -2,12 +2,57 @@ package database
 
 import (
 	"github.com/PylonSchema/server/model"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
+
+type LoginForm struct {
+	Email    string
+	Password string
+}
 
 // CreateUser
 func (d *GormDatabase) CreateUser(user *model.User) error {
 	return d.DB.Create(user).Error
+}
+
+func (d *GormDatabase) CreateOriginUser(user *model.User, origin *model.Origin) error {
+	tx := d.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	if err := tx.Error; err != nil {
+		return err
+	}
+	if err := tx.Create(user).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Create(origin).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
+func (d *GormDatabase) GetOriginUser(email string, password string) (*model.User, error) {
+	user := new(model.User)
+	err := d.DB.Where("email = ?", email).Find(user).Error
+	if err != nil {
+		return nil, err
+	}
+	origin := new(model.Origin)
+	err = d.DB.Where("uuid = ?", user.UUID).Find(origin).Error
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(origin.Password), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+	return user, err
 }
 
 // UpdateUser

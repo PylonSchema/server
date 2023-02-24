@@ -41,7 +41,7 @@ type Client struct {
 // close socket connection & remove client from gateway
 func (c *Client) closeConnection() {
 	c.once.Do(func() {
-		d := map[string]interface{}{"type": "authorized error"}
+		d := map[string]interface{}{"type": "close connection"}
 		command, _ := json.Marshal(&Message{
 			Op: 10,
 			D:  d,
@@ -51,14 +51,14 @@ func (c *Client) closeConnection() {
 	})
 }
 
-func (c *Client) defineClient(message *Message) {
+func (c *Client) defineClient(message *Message) error {
 	claims, err := c.gatewayPipe.Auth((message.D["token"]).(string))
 	if err != nil {
-		c.closeConnection()
-		return
+		return err
 	}
 	c.username = claims.Username
 	c.uuid = claims.UserUUID
+	return nil
 }
 
 func (c *Client) GatewayInject() error {
@@ -93,7 +93,11 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
 		case MessageAuthentication:
 			// message authorized implements
-			c.defineClient(&message)
+			err = c.defineClient(&message)
+			if err != nil {
+				c.syncErrorMessageWrite(0, "authorized error")
+				return
+			}
 			isNext = true
 		case MessageClose:
 			command, err := json.Marshal(&Message{

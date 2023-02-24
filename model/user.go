@@ -11,20 +11,18 @@ type User struct {
 	Username    string
 	AccountType int
 	UUID        uuid.UUID
-	SecretUUID  uuid.UUID
 	Email       string    `gorm:"unique;not null"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 type Origin struct {
-	SecretUUID uuid.UUID
-	Salt       string
-	Password   string
+	UUID     uuid.UUID
+	Password string
 }
 
 type Social struct {
-	SecretUUID   uuid.UUID
+	UUID         uuid.UUID
 	SocialType   int
 	SocialId     string
 	AccessToken  string

@@ -8,6 +8,7 @@ import (
 	"github.com/PylonSchema/server/api/gateway"
 	"github.com/PylonSchema/server/auth"
 	githubAuth "github.com/PylonSchema/server/auth/github"
+	pylonAuth "github.com/PylonSchema/server/auth/origin"
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/store"
 	"github.com/gin-gonic/gin"
@@ -101,12 +102,14 @@ func SetupRouter() *gin.Engine {
 		channelRouter.POST("/join/:id", channelAPI.JoinChannel) // join channel
 	}
 
+	pylonAuthAPI := pylonAuth.New(d, jwtAuth)
+
 	authRouter := r.Group("/auth")
 	{
-		sse := authRouter.Group("/sse")
+		pylon := authRouter.Group("/pylon")
 		{
-			sse.GET("/login")
-			sse.POST("/create")
+			pylon.POST("/login", pylonAuthAPI.LoginAccountHandler)
+			pylon.POST("/create", pylonAuthAPI.CreateAccountHandler)
 		}
 		github := authRouter.Group("/github")
 		{
