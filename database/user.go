@@ -10,6 +10,27 @@ func (d *GormDatabase) CreateUser(user *model.User) error {
 	return d.DB.Create(user).Error
 }
 
+func (d *GormDatabase) CreateOriginUser(user *model.User, origin *model.Origin) error {
+	tx := d.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
+	if err := tx.Error; err != nil {
+		return err
+	}
+	if err := tx.Create(user).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Create(origin).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit().Error
+}
+
 // UpdateUser
 func (d *GormDatabase) UpdateUser(user *model.User) error {
 	return d.DB.Save(user).Error

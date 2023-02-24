@@ -43,9 +43,6 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 
 }
 
-func (a *AuthOriginAPI) createAccount() {
+func (a *AuthOriginAPI) createUserModel() {
 
-}
-
-func (a *AuthOriginAPI) createTransaction() {
 }

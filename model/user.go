@@ -19,7 +19,6 @@ type User struct {
 
 type Origin struct {
 	SecretUUID uuid.UUID
-	Salt       string
 	Password   string
 }
 
