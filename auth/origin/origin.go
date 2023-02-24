@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/model"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Database interface {
@@ -43,6 +45,18 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 
 }
 
-func (a *AuthOriginAPI) createUserModel() {
-
+func (a *AuthOriginAPI) createModel(username string, email string, password string) (*model.User, *model.Origin, error) {
+	userUUID, err := uuid.NewUUID()
+	if err != nil {
+		return nil, nil, err
+	}
+	return &model.User{
+			Username:    username,
+			AccountType: 1,
+			UUID:        userUUID,
+			Email:       email,
+		}, &model.Origin{
+			UUID:     userUUID,
+			Password: password,
+		}, nil
 }

@@ -53,10 +53,6 @@ func (g *Github) Login(c *gin.Context) {
 }
 
 func (g *Github) createUser(username string, userId string, email string, token *oauth2.Token) error {
-	privateUUID, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
 
 	publicUUID, err := uuid.NewRandom()
 	if err != nil {
@@ -67,7 +63,6 @@ func (g *Github) createUser(username string, userId string, email string, token 
 		Username:    username,
 		AccountType: 1, // static, account type is social
 		UUID:        publicUUID,
-		SecretUUID:  privateUUID,
 		Email:       email,
 	}
 	err = g.DB.CreateUser(&user)
@@ -75,7 +70,6 @@ func (g *Github) createUser(username string, userId string, email string, token 
 		return err
 	}
 	social := model.Social{
-		SecretUUID:   privateUUID,
 		SocialType:   1, // static account type is github,
 		SocialId:     userId,
 		AccessToken:  token.AccessToken,
