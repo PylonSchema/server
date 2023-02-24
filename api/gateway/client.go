@@ -15,10 +15,11 @@ const (
 )
 
 const (
-	MessageHeartbeat      = 0
-	MessageAuthentication = 1
-	MessageData           = 2
-	MessageClose          = 10
+	MessageHeartbeat      = 0  // check websocket alive
+	MessageAuthentication = 1  // check authentication
+	MessageData           = 2  // payload is data (message etc.)
+	MessageError          = 9  // error occur in several reason (authentication error, websocket write length err etc.)
+	MessageClose          = 10 // websocket close
 )
 
 type pipe interface {
@@ -59,8 +60,8 @@ func (c *Client) defineClient(message *Message) {
 	c.uuid = claims.UserUUID
 }
 
-func (c *Client) GatewayInject() {
-	c.gatewayPipe.Inject(c)
+func (c *Client) GatewayInject() error {
+	return c.gatewayPipe.Inject(c)
 }
 
 func (c *Client) GatewayRemove() {
@@ -109,7 +110,10 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		}
 	}
 
-	c.GatewayInject() // inject client in gateway
+	err := c.GatewayInject() // inject client in gateway
+	if err != nil {
+		c.syncMessageWrite()
+	}
 
 	// implement except only authentication
 	for {
@@ -175,4 +179,13 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 		}
 	}
 
+}
+
+func (c *Client) syncMessageWrite(data *map[string]interface{}) error {
+	command, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	c.conn.WriteMessage(websocket.TextMessage, command)
+	return nil
 }
