@@ -15,6 +15,7 @@ import (
 type Database interface {
 	CreateOriginUser(user *model.User, origin *model.Origin) error
 	IsEmailUsed(email string) (bool, error)
+	GetOriginUser(email string, password string) (*model.User, error)
 }
 
 type AuthOriginAPI struct {
@@ -23,10 +24,14 @@ type AuthOriginAPI struct {
 }
 
 type createPayload struct {
-	Id       string `json:"id" binding:"required"`
 	Password string `json:"password" binding:"required"`
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required"`
+}
+
+type loginPaylaod struct {
+	Email    string `json:"id" binding:"required"`
+	Password string `json:"password" binding:"required"`
 }
 
 func New(db Database, jwtAuth *auth.JwtAuth) *AuthOriginAPI {
@@ -96,7 +101,35 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 }
 
 func (a *AuthOriginAPI) LoginAccountHandler(c *gin.Context) {
+	var loginPaylaod loginPaylaod
+	err := c.BindJSON(&loginPaylaod)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"error": "in-valid form error",
+		})
+		return
+	}
 
+	user, err := a.DB.GetOriginUser(loginPaylaod.Email, loginPaylaod.Password)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"error": "unauthorized",
+		})
+		return
+	}
+	jp := auth.JwtPayload{
+		UserUUID: user.UUID,
+		Username: user.Username,
+	}
+	jwtTokenString, err := a.JwtAuth.GenerateJWT(&jp)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+		return
+	}
+	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", true, true)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "ok",
+	})
 }
 
 func (c *createPayload) createModel(hashedPassword string) (*model.User, *model.Origin, error) {
@@ -124,9 +157,6 @@ func (c *createPayload) hashing() (string, error) {
 }
 
 func (c *createPayload) isValid() bool {
-	if len(c.Id) < 6 {
-		return false
-	}
 	if len(c.Password) < 10 {
 		return false
 	}
