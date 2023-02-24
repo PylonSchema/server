@@ -140,15 +140,13 @@ func (c *Client) readHandler(pongTimeout time.Duration) {
 		switch message.Op {
 		case MessageHeartbeat:
 			c.conn.SetReadDeadline(time.Now().Add(pongTimeout))
-		case MessageData:
-			c.writeChannel <- &message // reply test, message boardcast implement will be add in POST api request
 		case MessageClose:
 			command, err := json.Marshal(&Message{
 				Op: 10,
 				D:  nil,
 			})
 			if err != nil {
-				return // need websocket write error
+				return
 			}
 			c.conn.WriteMessage(websocket.TextMessage, command)
 			return
@@ -165,15 +163,16 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 
 	for {
 		select {
-		case message := <-c.writeChannel: // this channel message will be triggered by message POST api
+		case message := <-c.writeChannel:
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
 			command, err := json.Marshal(message)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message marshal error, internal server error")
+				return
 			}
 			err = c.conn.WriteMessage(websocket.TextMessage, command)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message write error, internal server error")
 			}
 		case <-pingTicker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeDeadline))
@@ -183,15 +182,25 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 			}
 			command, err := json.Marshal(pingMessage)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message marshal error, internal server error")
+				return
 			}
 			err = c.conn.WriteMessage(websocket.TextMessage, command)
 			if err != nil {
-				return // need websocket write error
+				c.syncErrorMessageWrite(0, "message write error, internal server error")
+				return
 			}
 		}
 	}
 
+}
+
+func (c *Client) syncErrorMessageWrite(code int, errorMessage string) error {
+	err := c.syncMessageWrite(&map[string]interface{}{
+		"Op": MessageError,
+		"d":  map[string]interface{}{"code": code, "data": errorMessage},
+	})
+	return err
 }
 
 func (c *Client) syncMessageWrite(data *map[string]interface{}) error {
