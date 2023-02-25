@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/PylonSchema/server/api"
@@ -11,6 +12,7 @@ import (
 	pylonAuth "github.com/PylonSchema/server/auth/origin"
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/store"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
@@ -21,6 +23,17 @@ var SecretKey *secret
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
+
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	r.Use(cors.New(
+		cors.Config{
+			AllowOrigins:     []string{"http://localhost:5500"},
+			AllowMethods:     []string{"POST"},
+			AllowHeaders:     []string{"Origin", "content-type"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}))
 
 	// load config form conf.toml
 	var conf conf

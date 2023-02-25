@@ -41,14 +41,14 @@ func (a *MessageAPI) CreateMessage(c *gin.Context) {
 		return
 	}
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
-	find, err := a.DB.IsUserInChannelByUUID(claims.UserUUID, messagePayload.ChannelId)
+	isIn, err := a.DB.IsUserInChannelByUUID(claims.UserUUID, messagePayload.ChannelId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error": "is user in channel by uuid error, db",
 		})
 		return
 	}
-	if !find {
+	if !isIn {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "this user not in channel error",
 		})
