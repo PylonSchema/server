@@ -45,7 +45,7 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 	var createPayload createPayload
 	err := c.BindJSON(&createPayload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": "bind json error",
 		})
 		return

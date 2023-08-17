@@ -47,6 +47,7 @@ func SetupRouter() *gin.Engine {
 	if err != nil {
 		panic(err)
 	}
+
 	err = d.AutoMigration() // auto migration, check table is Exist, if not create
 	if err != nil {
 		panic(err)
@@ -87,9 +88,6 @@ func SetupRouter() *gin.Engine {
 	channelAPI := api.ChannelAPI{
 		DB: d,
 	}
-
-	r.GET("/", func(c *gin.Context) {
-	})
 
 	gateway := gateway.New(jwtAuth, d)
 
