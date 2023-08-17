@@ -39,7 +39,7 @@ type githubEmailInfo struct {
 	Verified bool
 }
 
-func (g *Github) Login(c *gin.Context) {
+func (g *Github) LoginHandler(c *gin.Context) {
 	session := sessions.Default(c)
 	session.Options(sessions.Options{
 		Path:   "/auth",

@@ -68,7 +68,6 @@ func (j *JwtAuth) GenerateJWT(jp *JwtPayload) (string, error) {
 
 	tokenString, err := token.SignedString([]byte(j.secret))
 	if err != nil {
-		fmt.Println("jwt signed string error")
 		return "", err
 	}
 	return tokenString, nil
@@ -120,7 +119,7 @@ func (j *JwtAuth) AuthorizeToken(tokenString string) (*AuthTokenClaims, error) {
 	return claims, nil
 }
 
-func (j *JwtAuth) AuthorizeRequired() gin.HandlerFunc {
+func (j *JwtAuth) AuthorizeRequiredMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, err := c.Request.Cookie("token")
 		if err != nil {

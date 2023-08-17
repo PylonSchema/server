@@ -65,7 +65,7 @@ func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uui
 	return model, nil
 }
 
-func (a *ChannelAPI) CreateChannel(c *gin.Context) {
+func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
 
@@ -90,7 +90,7 @@ func (a *ChannelAPI) CreateChannel(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (a *ChannelAPI) RemoveChannel(c *gin.Context) {
+func (a *ChannelAPI) RemoveChannelHandler(c *gin.Context) {
 	var channelPayload ChannelPayload
 	err := c.BindJSON(&channelPayload)
 	if err != nil {
@@ -105,7 +105,7 @@ func (a *ChannelAPI) RemoveChannel(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-func (a *ChannelAPI) GetChannelIds(c *gin.Context) {
+func (a *ChannelAPI) GetChannelIdsHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
 	channels, err := a.DB.GetChannelsByUserUUID(uuid)
@@ -123,12 +123,12 @@ func (a *ChannelAPI) GetChannelIds(c *gin.Context) {
 }
 
 // authentication for join channel implement needed
-func (a *ChannelAPI) JoinChannel(c *gin.Context) {
+func (a *ChannelAPI) JoinChannelHandler(c *gin.Context) {
 	// claims := c.MustGet("token").(auth.AuthTokenClaims)
 	// uuid := claims.UserUUID
 }
 
 // remove user from channel
-func (a *ChannelAPI) RemoveUser(c *gin.Context) {
+func (a *ChannelAPI) RemoveUserHandler(c *gin.Context) {
 	//
 }

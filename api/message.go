@@ -31,7 +31,7 @@ func NewMessageAPI(gateway *gateway.Gateway, db *database.GormDatabase) *Message
 	}
 }
 
-func (a *MessageAPI) CreateMessage(c *gin.Context) {
+func (a *MessageAPI) CreateMessageHandler(c *gin.Context) {
 	messagePayload := &MessagePayload{}
 	err := c.Bind(&messagePayload)
 	if err != nil {
