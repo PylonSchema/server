@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	pingTick    = 10 * time.Second
+	pingTick    = 40 * time.Second
 	pongTimeout = (pingTick * 19) / 10
 )
 
@@ -47,7 +47,7 @@ func New(jwtAuth *auth.JwtAuth, db *database.GormDatabase) *Gateway {
 	}
 }
 
-func (g *Gateway) OpenGateway(c *gin.Context) {
+func (g *Gateway) CreateGatewayHandler(c *gin.Context) {
 	conn, err := g.Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		fmt.Println(err)

@@ -45,7 +45,7 @@ func (a *AuthOriginAPI) CreateAccountHandler(c *gin.Context) {
 	var createPayload createPayload
 	err := c.BindJSON(&createPayload)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 			"error": "bind json error",
 		})
 		return
@@ -126,7 +126,7 @@ func (a *AuthOriginAPI) LoginAccountHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
 		return
 	}
-	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", true, true)
+	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", false, false)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})

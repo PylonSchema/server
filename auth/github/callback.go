@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func (g *Github) Callback(c *gin.Context) {
+func (g *Github) CallbackHandler(c *gin.Context) {
 
 	err := auth.CheckState(c)
 	if err != nil {

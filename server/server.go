@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/PylonSchema/server/api"
@@ -11,6 +12,7 @@ import (
 	pylonAuth "github.com/PylonSchema/server/auth/origin"
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/store"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	"golang.org/x/oauth2"
@@ -21,6 +23,17 @@ var SecretKey *secret
 
 func SetupRouter() *gin.Engine {
 	r := gin.Default()
+
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	r.Use(cors.New(
+		cors.Config{
+			AllowOrigins:     []string{"http://localhost:5500"},
+			AllowMethods:     []string{"POST"},
+			AllowHeaders:     []string{"Origin", "content-type"},
+			AllowCredentials: true,
+			MaxAge:           12 * time.Hour,
+		}))
 
 	// load config form conf.toml
 	var conf conf
@@ -59,7 +72,7 @@ func SetupRouter() *gin.Engine {
 	}
 
 	// github Oauth router
-	githubRouter := githubAuth.Github{
+	githubAuthRouter := githubAuth.Github{
 		DB:      d,
 		JwtAuth: jwtAuth,
 		OAuthConfig: &oauth2.Config{
@@ -75,31 +88,28 @@ func SetupRouter() *gin.Engine {
 		DB: d,
 	}
 
-	r.GET("/", func(c *gin.Context) {
-	})
-
 	gateway := gateway.New(jwtAuth, d)
 
-	r.GET("/gateway", gateway.OpenGateway)
+	r.GET("/gateway", gateway.CreateGatewayHandler)
 
 	messageAPI := api.NewMessageAPI(gateway, d)
 
-	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequired())
+	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
-		messageRouter.POST("/", messageAPI.CreateMessage)
+		messageRouter.POST("/", messageAPI.CreateMessageHandler)
 	}
 
-	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequired())
+	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
 		userRouter.GET("/channel")
 	}
 
-	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequired())
+	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
-		channelRouter.GET("/", channelAPI.GetChannelIds)        // get channel ids
-		channelRouter.POST("/", channelAPI.CreateChannel)       // create channel
-		channelRouter.DELETE("/", channelAPI.RemoveChannel)     // delete channel
-		channelRouter.POST("/join/:id", channelAPI.JoinChannel) // join channel
+		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)        // get channel ids
+		channelRouter.POST("/", channelAPI.CreateChannelHandler)       // create channel
+		channelRouter.DELETE("/", channelAPI.RemoveChannelHandler)     // delete channel
+		channelRouter.POST("/join/:id", channelAPI.JoinChannelHandler) // join channel
 	}
 
 	pylonAuthAPI := pylonAuth.New(d, jwtAuth)
@@ -113,10 +123,11 @@ func SetupRouter() *gin.Engine {
 		}
 		github := authRouter.Group("/github")
 		{
-			github.GET("/login", githubRouter.Login)
-			github.GET("/callback", githubRouter.Callback)
+			github.GET("/login", githubAuthRouter.LoginHandler)
+			github.GET("/callback", githubAuthRouter.CallbackHandler)
 		}
-		authRouter.Use(jwtAuth.AuthorizeRequired()).GET("/token", func(ctx *gin.Context) {
+
+		authRouter.Use(jwtAuth.AuthorizeRequiredMiddleware()).GET("/token", func(ctx *gin.Context) {
 			t, e := ctx.Cookie("token")
 			if e != nil {
 				ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
