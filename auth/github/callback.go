@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/PylonSchema/server/auth"
+	"github.com/PylonSchema/server/model"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
-func (g *Github) Callback(c *gin.Context) {
+func (g *Github) CallbackHandler(c *gin.Context) {
 
 	err := auth.CheckState(c)
 	if err != nil {
@@ -76,9 +78,10 @@ func (g *Github) Callback(c *gin.Context) {
 		fmt.Println("github auth generate jwt token error")
 		return
 	}
-	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", true, true)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
+		"token":   jwtTokenString,
+		"expire":  60 * 60 * 24 * 90,
 	})
 }
 
@@ -132,4 +135,35 @@ func (g *Github) getUserEmail(c *gin.Context, token *oauth2.Token) (string, erro
 		return "", auth.ErrNoValidEmail
 	}
 	return email, nil
+}
+
+func (g *Github) createUser(username string, userId string, email string, token *oauth2.Token) error {
+
+	publicUUID, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+
+	user := model.User{
+		Username:    username,
+		AccountType: 1, // static, account type is social
+		UUID:        publicUUID,
+		Email:       email,
+	}
+	err = g.DB.CreateUser(&user)
+	if err != nil {
+		return err
+	}
+	social := model.Social{
+		SocialType:   1, // static account type is github,
+		SocialId:     userId,
+		AccessToken:  token.AccessToken,
+		RefreshToken: token.RefreshToken, // this will be nil, github has no refresh token
+	}
+	err = g.DB.CreateSocial(&social)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

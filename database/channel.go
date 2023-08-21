@@ -44,5 +44,8 @@ func (d *GormDatabase) IsUserInChannelByUUID(userUUID uuid.UUID, channelId uint)
 	if err != nil {
 		return false, err
 	}
-	return true, nil
+	if channelMember.UUID == userUUID {
+		return true, nil
+	}
+	return false, nil
 }

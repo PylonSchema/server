@@ -31,7 +31,7 @@ func NewMessageAPI(gateway *gateway.Gateway, db *database.GormDatabase) *Message
 	}
 }
 
-func (a *MessageAPI) CreateMessage(c *gin.Context) {
+func (a *MessageAPI) CreateMessageHandler(c *gin.Context) {
 	messagePayload := &MessagePayload{}
 	err := c.Bind(&messagePayload)
 	if err != nil {
@@ -41,14 +41,14 @@ func (a *MessageAPI) CreateMessage(c *gin.Context) {
 		return
 	}
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
-	find, err := a.DB.IsUserInChannelByUUID(claims.UserUUID, messagePayload.ChannelId)
+	isIn, err := a.DB.IsUserInChannelByUUID(claims.UserUUID, messagePayload.ChannelId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"error": "is user in channel by uuid error, db",
 		})
 		return
 	}
-	if !find {
+	if !isIn {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 			"error": "this user not in channel error",
 		})
