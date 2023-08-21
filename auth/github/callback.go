@@ -78,9 +78,10 @@ func (g *Github) CallbackHandler(c *gin.Context) {
 		fmt.Println("github auth generate jwt token error")
 		return
 	}
-	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", true, true)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
+		"token":   jwtTokenString,
+		"expire":  60 * 60 * 24 * 90,
 	})
 }
 
