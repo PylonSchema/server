@@ -14,6 +14,7 @@
 
 [secret]
     session="your session key"
+    jwtkey="your jwt secret key"
 
 [oauth.github]
     id="github client id"
