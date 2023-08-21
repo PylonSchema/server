@@ -33,8 +33,9 @@ func (a *AuthOriginAPI) LoginAccountHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
 		return
 	}
-	c.SetCookie("token", jwtTokenString, 60*60*24*90, "/", "localhost", false, false)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
+		"token":   jwtTokenString,
+		"expire":  60 * 60 * 24 * 90,
 	})
 }
