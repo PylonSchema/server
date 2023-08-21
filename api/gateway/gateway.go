@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -9,7 +8,6 @@ import (
 	"github.com/PylonSchema/server/auth"
 	"github.com/PylonSchema/server/database"
 	"github.com/PylonSchema/server/model"
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -45,29 +43,6 @@ func New(jwtAuth *auth.JwtAuth, db *database.GormDatabase) *Gateway {
 		m:        new(sync.RWMutex),
 		db:       db,
 	}
-}
-
-func (g *Gateway) CreateGatewayHandler(c *gin.Context) {
-	conn, err := g.Upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		fmt.Println(err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message":    "internal server error",
-			"trace code": "create upgrade connection",
-			"error":      err,
-		})
-		return
-	}
-	client := &Client{
-		conn:         conn,
-		gatewayPipe:  g,
-		writeChannel: make(chan *Message),
-		username:     "",
-		uuid:         uuid.UUID{},
-	}
-
-	go client.readHandler(pongTimeout)
-	go client.writeHandler(pingTick)
 }
 
 func (g *Gateway) Inject(c *Client) error { // inject client to channel
