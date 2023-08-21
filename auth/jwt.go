@@ -126,6 +126,7 @@ func (j *JwtAuth) AuthorizeRequiredMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
 				"message": "no token",
 			})
+			return
 		}
 
 		claims, err := j.AuthorizeToken(tokenString)
