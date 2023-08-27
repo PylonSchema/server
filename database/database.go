@@ -48,6 +48,7 @@ func (g *GormDatabase) AutoMigration() error {
 	err := g.DB.AutoMigrate(
 		&model.User{}, &model.Origin{}, &model.Social{},
 		&model.Channel{}, &model.ChannelMember{},
+		&model.RefreshToken{}, &model.UserTokenPair{},
 	)
 	if err != nil {
 		panic(err)

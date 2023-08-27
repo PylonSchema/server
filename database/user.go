@@ -1,7 +1,11 @@
 package database
 
 import (
+	"time"
+
 	"github.com/PylonSchema/server/model"
+	"github.com/PylonSchema/server/try"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -66,7 +70,7 @@ func (d *GormDatabase) CreateSocial(social *model.Social) error {
 
 func (d *GormDatabase) IsEmailUsed(email string) (bool, error) {
 	user := new(model.User)
-	err := d.DB.Where("email = ?", email).Find(user).Error
+	err := d.DB.Where("email = ?", email).First(user).Error
 	if err == gorm.ErrRecordNotFound {
 		return false, nil
 	}
@@ -86,4 +90,60 @@ func (d *GormDatabase) GetUserFromSocialByEmail(email string, socialType int) (*
 		return nil, err
 	}
 	return user, nil
+}
+
+func (d *GormDatabase) SetUserTokenPair(uuid uuid.UUID, expireAt time.Time, tokenString string) error {
+	err := d.DB.Create(&model.UserTokenPair{
+		UUID:     uuid,
+		ExpireAt: expireAt,
+		Token:    tokenString,
+	}).Error
+	return err
+}
+
+func (d *GormDatabase) GetAllUserToken(uuid uuid.UUID) (*[]model.UserTokenPair, error) {
+	queryUserTokenPairs := []model.UserTokenPair{}
+	err := d.DB.Where("uuid = ?", uuid).Find(&queryUserTokenPairs).Error
+	if err != nil {
+		return &queryUserTokenPairs, err
+	}
+	validUserTokenPairs := []model.UserTokenPair{}
+	for _, userTokenPair := range queryUserTokenPairs {
+		if userTokenPair.ExpireAt.Unix() < time.Now().Unix() {
+			userToken := &UserToken{
+				id: userTokenPair.ID,
+				d:  d,
+			}
+			go try.TryN(userToken, 3)
+			continue
+		}
+		validUserTokenPairs = append(validUserTokenPairs, userTokenPair)
+	}
+	return &validUserTokenPairs, nil
+}
+
+type UserToken struct {
+	id uint
+	d  *GormDatabase
+}
+
+func (r *UserToken) Run() error {
+	return r.removeUserToken()
+}
+
+func (r *UserToken) Fail() error {
+	return nil
+}
+
+func (r *UserToken) removeUserToken() error {
+	userTokenPair := model.UserTokenPair{
+		ID: r.id,
+	}
+	err := r.d.DB.Delete(&userTokenPair).Error
+	if err == gorm.ErrRecordNotFound {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return nil
 }
