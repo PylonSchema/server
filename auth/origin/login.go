@@ -2,6 +2,7 @@ package origin
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/PylonSchema/server/auth"
 	"github.com/gin-gonic/gin"
@@ -33,9 +34,19 @@ func (a *AuthOriginAPI) LoginAccountHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
 		return
 	}
+
+	expireSec := 60 * 60 * 24 * 90
+	expireAt := time.Now().Add(time.Second * 60 * 60 * 24 * 90)
+
+	err = a.DB.SetUserTokenPair(user.UUID, expireAt, jwtTokenString)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, auth.InternalServerError)
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 		"token":   jwtTokenString,
-		"expire":  60 * 60 * 24 * 90,
+		"expire":  expireSec,
 	})
 }

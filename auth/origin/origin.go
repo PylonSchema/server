@@ -3,6 +3,8 @@ package origin
 // this package manage origin platform account, Pylon
 
 import (
+	"time"
+
 	"github.com/PylonSchema/server/auth"
 	"github.com/PylonSchema/server/model"
 	"github.com/google/uuid"
@@ -12,6 +14,7 @@ type Database interface {
 	CreateOriginUser(user *model.User, origin *model.Origin) error
 	IsEmailUsed(email string) (bool, error)
 	GetOriginUser(email string, password string) (*model.User, error)
+	SetUserTokenPair(uuid uuid.UUID, expireAt time.Time, tokenString string) error
 }
 
 type AuthOriginAPI struct {
