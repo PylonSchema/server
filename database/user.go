@@ -92,12 +92,8 @@ func (d *GormDatabase) GetUserFromSocialByEmail(email string, socialType int) (*
 	return user, nil
 }
 
-func (d *GormDatabase) SetUserTokenPair(uuid uuid.UUID, expireAt time.Time, tokenString string) error {
-	err := d.DB.Create(&model.UserTokenPair{
-		UUID:     uuid,
-		ExpireAt: expireAt,
-		Token:    tokenString,
-	}).Error
+func (d *GormDatabase) SetUserTokenPair(userTokenPair *model.UserTokenPair) error {
+	err := d.DB.Create(userTokenPair).Error
 	return err
 }
 
