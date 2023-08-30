@@ -35,9 +35,10 @@ type RefreshToken struct {
 }
 
 type UserTokenPair struct {
-	ID       uint      `gorm:"primaryKey;autoIncrement:true"`
-	UUID     uuid.UUID `gorm:"index:"`
-	ExpireAt time.Time `gorm:"index:"`
-	Token    string
-	Type     int
+	ID         uint      `gorm:"primaryKey;autoIncrement:true"`
+	UUID       uuid.UUID `gorm:"index:"`
+	ExpireAt   time.Time `gorm:"index:"`
+	Token      string
+	Type       int
+	DeviceName string
 }
