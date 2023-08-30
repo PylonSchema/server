@@ -2,7 +2,7 @@ module github.com/PylonSchema/server
 
 go 1.19
 
-replace github.com/PylonSchema/server/server => ./server
+replace github.com/PylonSchema/server => ../server
 
 require (
 	github.com/BurntSushi/toml v1.2.1
@@ -22,6 +22,7 @@ require (
 	github.com/gin-contrib/cors v1.4.0 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
+	github.com/mileusna/useragent v1.3.3 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
