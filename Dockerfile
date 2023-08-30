@@ -14,6 +14,7 @@ RUN sudo apt-get -y install mysql-server && \
     sudo rm -rf /usr/local/go && tar -C /usr/local -xzf go1.21.0.linux-amd64.tar.gz
 
 ENV PATH "/usr/local/go/bin:${PATH}"
+ENV DB_PWD=""
 
 RUN mkdir server
 
@@ -24,6 +25,6 @@ COPY ./ ./server
 RUN cd server && go mod download
 
 # CMD
-CMD ["/bin/bash", "-c", "sudo systemctl start mysql" ]
+CMD ["/bin/bash", "-c", "sudo systemctl start mysql", "&&", "mysql -u root -e \"alter user 'root'@'localhost' identified with mysql_native_password by '${DB_PWD}';\"" ]
 
-EXPOSE 3306
+EXPOSE 5500
