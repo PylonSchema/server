@@ -12,6 +12,7 @@ type Database interface {
 	CreateOriginUser(user *model.User, origin *model.Origin) error
 	IsEmailUsed(email string) (bool, error)
 	GetOriginUser(email string, password string) (*model.User, error)
+	SetUserTokenPair(*model.UserTokenPair) error
 }
 
 type AuthOriginAPI struct {

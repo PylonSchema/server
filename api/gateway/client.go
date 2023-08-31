@@ -36,6 +36,8 @@ type Client struct {
 	gatewayPipe  pipe
 	username     string    // client username
 	uuid         uuid.UUID // client uuid
+	token        string    // client jwt token
+	refreshToken string    // client jwt refresh token
 }
 
 // close socket connection & remove client from gateway
@@ -48,6 +50,7 @@ func (c *Client) closeConnection() {
 		})
 		c.conn.WriteMessage(websocket.TextMessage, command)
 		c.conn.Close()
+		c.GatewayRemove()
 	})
 }
 
@@ -58,6 +61,8 @@ func (c *Client) defineClient(message *Message) error {
 	}
 	c.username = claims.Username
 	c.uuid = claims.UserUUID
+	c.token = message.D["token"].(string)
+	c.refreshToken = claims.RefreshToken
 	return nil
 }
 

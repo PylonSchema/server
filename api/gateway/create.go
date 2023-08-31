@@ -1,7 +1,6 @@
 package gateway
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,11 +10,9 @@ import (
 func (g *Gateway) CreateGatewayHandler(c *gin.Context) {
 	conn, err := g.Upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message":    "internal server error",
-			"trace code": "create upgrade connection",
-			"error":      err,
+			"message": "internal server error",
+			"error":   err,
 		})
 		return
 	}
@@ -25,6 +22,8 @@ func (g *Gateway) CreateGatewayHandler(c *gin.Context) {
 		writeChannel: make(chan *Message),
 		username:     "",
 		uuid:         uuid.UUID{},
+		token:        "",
+		refreshToken: "",
 	}
 
 	go client.readHandler(pongTimeout)
