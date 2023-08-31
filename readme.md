@@ -9,6 +9,12 @@ Go
 
 ref ./example.toml file and change filename to conf.toml  
 
+### Set Scylla database with docker
+Checkout more options - [Scylla Docker Image](https://hub.docker.com/r/scylladb/scylla/)  
+```powershell
+docker run --name scylla -d -p 22:22 -p 7000:7000 -p 7001:7001 -p 9042:9042 -p 9160:9160 -p 9180:9180 scylladb/scylla --smp 1
+```
+
 ### Run Server
 ```
 go run main.go
