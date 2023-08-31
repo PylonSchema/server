@@ -50,7 +50,7 @@ func (c *Client) writeHandler(pingTick time.Duration) {
 
 func (c *Client) syncErrorMessageWrite(code int, errorMessage string) error {
 	err := c.syncMessageWrite(&map[string]interface{}{
-		"Op": MessageError,
+		"op": MessageError,
 		"d":  map[string]interface{}{"code": code, "data": errorMessage},
 	})
 	return err
