@@ -35,7 +35,7 @@ func New(username string, password string, address string, port string) (*GormDa
 	}
 
 	sqldb.SetMaxIdleConns(10)
-	sqldb.SetMaxOpenConns(10)
+	sqldb.SetMaxOpenConns(0)
 	sqldb.SetConnMaxLifetime(time.Minute * 3)
 
 	db = &GormDatabase{DB: d}
