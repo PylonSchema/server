@@ -7,10 +7,10 @@ import (
 )
 
 type Channel struct {
-	Id        uint `gorm:"primaryKey;autoIncrement:true"`
-	Name      string
-	UUID      uuid.UUID
-	Owner     uuid.UUID
+	Id        uint             `gorm:"primaryKey;autoIncrement:true"`
+	Name      string           `gorm:"type:varchar(225);not null;default:null"`
+	UUID      uuid.UUID        `gorm:"type:varchar(36);not null;default:null"`
+	Owner     uuid.UUID        `gorm:"type:varchar(36);not null;default:null"`
 	CreatedAt time.Time        `gorm:"autoCreateTime"`
 	UpdatedAt time.Time        `gorm:"autoUpdateTime"`
 	Members   []*ChannelMember `gorm:"foreignKey:ChannelId;References:Id;constraint:OnDelete:CASCADE"`
@@ -22,8 +22,8 @@ type ChannelMember struct {
 }
 
 type InvitationChannel struct {
-	ChannelUUID     uuid.UUID `gorm:"index"`
-	InvitiationUUID string    `gorm:"index;type:varchar(125)"` // random invitation uuid + random string (15)
+	ChannelUUID     uuid.UUID `gorm:"index:not null;default:null"`
+	InvitiationUUID string    `gorm:"index;type:varchar(125);not null;default:null"` // random invitation uuid + random string (15)
 	CreatedAt       time.Time `gorm:"autoCreateTime"`
-	ExpireAt        time.Time
+	ExpireAt        time.Time `gorm:"index"`
 }
