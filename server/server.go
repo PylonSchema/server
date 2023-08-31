@@ -97,9 +97,7 @@ func SetupRouter() *gin.Engine {
 		messageRouter.POST("/", messageAPI.CreateMessageHandler)
 	}
 
-	channelAPI := api.ChannelAPI{
-		DB: d,
-	}
+	channelAPI := api.NewChannelAPI(d, gateway)
 
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{

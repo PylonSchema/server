@@ -17,8 +17,12 @@ type ChannelDatabase interface {
 	RemoveUserByChannelId(user *model.User, channelId uint) error
 }
 
+type ChannelGateway interface {
+}
+
 type ChannelAPI struct {
-	DB ChannelDatabase
+	d ChannelDatabase
+	g ChannelGateway
 }
 
 type createChannelPayload struct {
@@ -28,6 +32,13 @@ type createChannelPayload struct {
 
 type ChannelPayload struct {
 	ChannelId uint
+}
+
+func NewChannelAPI(database ChannelDatabase, gateway ChannelGateway) *ChannelAPI {
+	return &ChannelAPI{
+		d: database,
+		g: gateway,
+	}
 }
 
 func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uuid.UUID) (*model.Channel, error) {
@@ -82,7 +93,7 @@ func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel model error"})
 		return
 	}
-	err = a.DB.CreateChannel(channelModel)
+	err = a.d.CreateChannel(channelModel)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel error"})
 		return
@@ -97,7 +108,7 @@ func (a *ChannelAPI) RemoveChannelHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	err = a.DB.RemoveChannel(channelPayload.ChannelId)
+	err = a.d.RemoveChannel(channelPayload.ChannelId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -108,7 +119,7 @@ func (a *ChannelAPI) RemoveChannelHandler(c *gin.Context) {
 func (a *ChannelAPI) GetChannelIdsHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
-	channels, err := a.DB.GetChannelsByUserUUID(uuid)
+	channels, err := a.d.GetChannelsByUserUUID(uuid)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
