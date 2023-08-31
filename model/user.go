@@ -10,8 +10,8 @@ type User struct {
 	ID          uint `gorm:"primaryKey;autoIncrement:true"`
 	Username    string
 	AccountType int
-	UUID        uuid.UUID `gorm:"type:varchar(36);uniqueIndex;not null;default:null"`
-	Email       string    `gorm:"size:64;uniqueIndex;not null;default:null"`
+	UUID        uuid.UUID `gorm:"type:varchar(36);uniqueIndex;not null"`
+	Email       string    `gorm:"size:64;uniqueIndex;not null;"`
 	CreatedAt   time.Time `gorm:"autoCreateTime"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
@@ -30,15 +30,15 @@ type Social struct {
 }
 
 type RefreshToken struct {
-	AccessToken  string `gorm:"not null;default:null"`
-	RefreshToken string `gorm:"not null;default:null"`
+	AccessToken  string `gorm:"not null"`
+	RefreshToken string `gorm:"not null"`
 }
 
 type UserTokenPair struct {
 	ID         uint      `gorm:"primaryKey;autoIncrement:true"`
-	UUID       uuid.UUID `gorm:"index;not null;default:null"`
+	UUID       uuid.UUID `gorm:"index;not null"`
 	ExpireAt   time.Time `gorm:"index"`
-	Token      string    `gorm:"not null;default:null"`
-	Type       int       `gorm:"not null;default:null"`
-	DeviceName string    `gorm:"type:varchar(255);not null;default:null"`
+	Token      string    `gorm:"not null"`
+	Type       int       `gorm:"not null"`
+	DeviceName string    `gorm:"type:varchar(255);not null"`
 }
