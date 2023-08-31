@@ -7,11 +7,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type Auth struct {
+type AuthAPI struct {
 	JwtAuth *JwtAuth
+	d       AuthDatabase
 }
 
-func (a *Auth) Blacklist(c *gin.Context) {
+type AuthDatabase interface {
+}
+
+func New(jwtAuth *JwtAuth, authDatabase AuthDatabase) *AuthAPI {
+	return &AuthAPI{
+		JwtAuth: jwtAuth,
+		d:       authDatabase,
+	}
+}
+
+func (a *AuthAPI) BlacklistHandler(c *gin.Context) {
 	token, err := c.Request.Cookie("token")
 	if err != nil {
 		if err == http.ErrNoCookie {
@@ -54,4 +65,8 @@ func (a *Auth) Blacklist(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{
 		"message": time.Until(claims.ExpiresAt.Time),
 	})
+}
+
+func (a *AuthAPI) GetTokenHandler(c *gin.Context) {
+
 }

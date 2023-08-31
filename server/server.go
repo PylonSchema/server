@@ -67,9 +67,7 @@ func SetupRouter() *gin.Engine {
 
 	jwtAuth := auth.NewJwtAuth(d, store, conf.Secret.Jwtkey)
 
-	auth := &auth.Auth{
-		JwtAuth: jwtAuth,
-	}
+	auth := auth.New(jwtAuth, d)
 
 	// github Oauth router
 	githubAuthRouter := githubAuth.Github{
@@ -138,7 +136,7 @@ func SetupRouter() *gin.Engine {
 				"token": t,
 			})
 		})
-		authRouter.GET("/blacklist", auth.Blacklist)
+		authRouter.GET("/blacklist", auth.BlacklistHandler)
 	}
 
 	return r
