@@ -82,9 +82,9 @@ func SetupRouter() *gin.Engine {
 		},
 	}
 
-	channelAPI := api.ChannelAPI{
-		DB: d,
-	}
+	versionAPI := api.NewVersionAPI("localhost", 8080)
+
+	r.GET("/version", versionAPI.VersionHandler)
 
 	gateway := gateway.New(jwtAuth, d)
 
@@ -95,6 +95,10 @@ func SetupRouter() *gin.Engine {
 	messageRouter := r.Group("/message").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
 		messageRouter.POST("/", messageAPI.CreateMessageHandler)
+	}
+
+	channelAPI := api.ChannelAPI{
+		DB: d,
 	}
 
 	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequiredMiddleware())
