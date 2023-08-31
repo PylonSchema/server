@@ -136,7 +136,8 @@ func SetupRouter() *gin.Engine {
 				"token": t,
 			})
 		})
-		authRouter.GET("/blacklist", auth.BlacklistHandler)
+		authRouter.GET("/blacklist", auth.BlacklistHandler).Use(jwtAuth.AuthorizeRequiredMiddleware())
+		authRouter.GET("/usertokens", auth.GetTokenHandler).Use(jwtAuth.AuthorizeRequiredMiddleware())
 	}
 
 	return r
