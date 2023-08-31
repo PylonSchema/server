@@ -26,8 +26,7 @@ type ChannelAPI struct {
 }
 
 type createChannelPayload struct {
-	Name    string   `json:"name" binding:"required"`
-	Members []string `json:"members" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 type ChannelPayload struct {
@@ -41,44 +40,8 @@ func NewChannelAPI(database ChannelDatabase, gateway ChannelGateway) *ChannelAPI
 	}
 }
 
-func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uuid.UUID) (*model.Channel, error) {
-	channelUUID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
-	}
-	membersSet := make(map[uuid.UUID]struct{})
-	members := make([]model.ChannelMember, 0)
-	for _, member := range payload.Members {
-		memberUUID, err := uuid.Parse(member)
-		if err != nil {
-			continue
-		}
-		if memberUUID == owner {
-			continue
-		}
-		_, found := membersSet[memberUUID]
-		if !found {
-			membersSet[memberUUID] = struct{}{}
-			members = append(members, model.ChannelMember{
-				UUID: memberUUID,
-			})
-		}
-	}
-	members = append(members, model.ChannelMember{
-		UUID: owner,
-	})
-	model := &model.Channel{
-		Name:    payload.Name,
-		UUID:    channelUUID,
-		Owner:   owner,
-		Members: members,
-	}
-	return model, nil
-}
-
 func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
-	uuid := claims.UserUUID
 
 	var payload createChannelPayload
 	err := c.BindJSON(&payload)
@@ -86,12 +49,15 @@ func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "bind json error"})
 		return
 	}
-
-	payload.Members = append(payload.Members, uuid.String())
-	channelModel, err := a.createChannelModel(&payload, uuid)
+	channelUUID, err := uuid.NewRandom()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel model error"})
 		return
+	}
+	channelModel := &model.Channel{
+		Name:  payload.Name,
+		UUID:  channelUUID,
+		Owner: claims.UserUUID,
 	}
 	err = a.d.CreateChannel(channelModel)
 	if err != nil {
