@@ -10,7 +10,6 @@ import (
 var version = map[string]string{
 	"auth":    "0.0.1",
 	"gateway": "0.0.1",
-	"user":    "0.0.1",
 	"message": "0.0.1",
 	"channel": "0.0.1",
 }
@@ -19,7 +18,6 @@ var endpoint = map[string]string{
 	"auth":    "/auth",
 	"gateway": "/gateway",
 	"message": "/message",
-	"user":    "/user",
 	"channel": "/channel",
 }
 

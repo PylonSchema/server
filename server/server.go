@@ -101,11 +101,6 @@ func SetupRouter() *gin.Engine {
 		DB: d,
 	}
 
-	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequiredMiddleware())
-	{
-		userRouter.GET("/channel")
-	}
-
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
 		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)        // get channel ids
