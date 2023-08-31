@@ -43,10 +43,22 @@ func SetupRouter() *gin.Engine {
 	}
 
 	// database setting
-	d, err := database.New(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	d, err := database.New(&database.DatabaseConfig{
+		SQLConfig: &database.SQLConfig{
+			Username: conf.Database.Username,
+			Password: conf.Database.Password,
+			Address:  conf.Database.Address,
+			Port:     conf.Database.Port,
+		},
+		NOSQLConfig: &database.NOSQLConfig{
+			Hosts: conf.Scylla.Hosts,
+			Port:  conf.Scylla.Port,
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
+
 	err = d.AutoMigration() // auto migration, check table is Exist, if not create
 	if err != nil {
 		panic(err)

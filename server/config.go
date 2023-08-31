@@ -2,6 +2,7 @@ package server
 
 type conf struct {
 	Database *databaseInfo
+	Scylla   *scylla
 	Store    *storeInfo
 	Sentry   *sentryInfo
 	Secret   *secret
@@ -34,4 +35,11 @@ type oauth2Info struct {
 	Id       string
 	Secret   string
 	Redirect string
+}
+
+type scylla struct {
+	Username string
+	Password string
+	Port     string
+	Hosts    []string
 }
