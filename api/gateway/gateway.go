@@ -29,7 +29,7 @@ type Gateway struct {
 	db       Database
 }
 
-func New(jwtAuth *auth.JwtAuth, db *database.GormDatabase) *Gateway {
+func New(jwtAuth *auth.JwtAuth, db *database.Database) *Gateway {
 	return &Gateway{
 		Upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
