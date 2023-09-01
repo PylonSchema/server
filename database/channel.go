@@ -2,6 +2,8 @@ package database
 
 import (
 	"github.com/PylonSchema/server/model"
+	"github.com/PylonSchema/server/pylontype"
+	"github.com/PylonSchema/server/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -48,4 +50,29 @@ func (d *Database) IsUserInChannelByUUID(userUUID uuid.UUID, channelId uint) (bo
 		return true, nil
 	}
 	return false, nil
+}
+
+func (d *Database) GetUserRoleInChannelByUUID(userUUID uuid.UUID, channelId uint) (int, error) {
+	channelMember := new(model.ChannelMember)
+	err := d.DB.Where("id = ? AND owner = ?", channelId, userUUID.String()).Find(channelMember).Error
+	if err != nil {
+		return -1, err
+	}
+	return pylontype.UserRoleOwner, nil
+}
+
+func (d *Database) CreateChannelInvitationLink(channel_id uint, link_type int) (string, error) {
+	uid, err := uuid.NewUUID()
+	if err != nil {
+		return "", err
+	}
+	randomString := utils.CreateRandomString(15)
+	invitationLink := uid.String() + randomString
+	err = d.DB.Create(&model.InvitationChannel{
+		ChannelID:       channel_id,
+		InvitiationLink: invitationLink,
+		ExpireType:      link_type,
+	}).Error
+
+	return invitationLink, err
 }

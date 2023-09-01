@@ -113,9 +113,12 @@ func SetupRouter() *gin.Engine {
 
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
-		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)        // get channel ids
-		channelRouter.POST("/", channelAPI.CreateChannelHandler)       // create channel
-		channelRouter.DELETE("/", channelAPI.RemoveChannelHandler)     // delete channel
+		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)    // get channel ids
+		channelRouter.POST("/", channelAPI.CreateChannelHandler)   // create channel
+		channelRouter.DELETE("/", channelAPI.RemoveChannelHandler) // delete channel
+		channelRouter.GET("/invitation-link", channelAPI.GetChannelInvitationLinkHandler)
+		channelRouter.POST("/invitation-link", channelAPI.CreateChannelInvitationLinkHandler)
+		channelRouter.DELETE("/invitation-link", channelAPI.RemoveChannelInvitationLinkHandler)
 		channelRouter.POST("/join/:id", channelAPI.JoinChannelHandler) // join channel
 	}
 

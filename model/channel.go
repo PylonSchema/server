@@ -22,8 +22,8 @@ type ChannelMember struct {
 }
 
 type InvitationChannel struct {
-	ChannelUUID     uuid.UUID `gorm:"index:not null"`
-	InvitiationUUID string    `gorm:"index;type:varchar(125);not null"` // random invitation uuid + random string (15)
+	ChannelID       uint      `gorm:"index:not null"`
+	InvitiationLink string    `gorm:"index;type:varchar(125);not null"` // random invitation uuid + random string (15)
 	CreatedAt       time.Time `gorm:"autoCreateTime"`
-	ExpireAt        time.Time `gorm:"index"`
+	ExpireType      int       `gorm:"index"`
 }
