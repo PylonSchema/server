@@ -147,7 +147,7 @@ func (a *ChannelAPI) GetChannelInvitationLinkHandler(c *gin.Context) {
 
 type createChannelInvitationLink struct {
 	ChannelID  uint `json:"channelid" binding:"required"`
-	ExpireType int  `json:"expiretype" binding:"required"` // dispoable, 1 hour, 1 day, 1 week, 1 month, permanent
+	ExpireType *int `json:"expiretype" binding:"required"` // dispoable, 1 hour, 1 day, 1 week, 1 month, permanent
 }
 
 func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
@@ -155,14 +155,14 @@ func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
 	form := &createChannelInvitationLink{}
 	err := c.BindJSON(&form)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid form",
 		})
 		return
 	}
-	if form.ExpireType < 0 || form.ExpireType > 6 {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
+	if *form.ExpireType < 0 || *form.ExpireType > 6 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "expire type must be in 0-6",
 		})
 		return
 	}
@@ -179,7 +179,7 @@ func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
 		})
 		return
 	}
-	link, err := a.d.CreateChannelInvitationLink(form.ChannelID, form.ExpireType)
+	link, err := a.d.CreateChannelInvitationLink(form.ChannelID, *form.ExpireType)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "no permission to create link",
