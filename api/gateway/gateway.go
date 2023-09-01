@@ -22,11 +22,17 @@ type Database interface {
 }
 
 type Gateway struct {
-	Upgrader websocket.Upgrader
-	m        *sync.RWMutex
-	channels map[uint][]*Client
-	JwtAuth  *auth.JwtAuth
-	db       Database
+	Upgrader    websocket.Upgrader
+	m           *sync.RWMutex
+	channels    map[uint][]*Client
+	JwtAuth     *auth.JwtAuth
+	db          Database
+	UserSockets *userSockets
+}
+
+type userSockets struct {
+	m           *sync.RWMutex
+	userSockets map[string][]*Client
 }
 
 func New(jwtAuth *auth.JwtAuth, db *database.Database) *Gateway {
@@ -42,6 +48,10 @@ func New(jwtAuth *auth.JwtAuth, db *database.Database) *Gateway {
 		channels: make(map[uint][]*Client),
 		m:        new(sync.RWMutex),
 		db:       db,
+		UserSockets: &userSockets{
+			m:           new(sync.RWMutex),
+			userSockets: make(map[string][]*Client),
+		},
 	}
 }
 
@@ -50,12 +60,18 @@ func (g *Gateway) Inject(c *Client) error { // inject client to channel
 	if err != nil {
 		return err
 	}
-	g.m.Lock()
-	defer g.m.Unlock()
 
+	g.m.Lock()
 	for _, channel := range *channels {
 		g.channels[channel.ChannelId] = append(g.channels[channel.ChannelId], c)
 	}
+	g.m.Unlock()
+
+	userUUID := c.uuid.String()
+	g.UserSockets.m.Lock()
+	g.UserSockets.userSockets[userUUID] = append(g.UserSockets.userSockets[userUUID], c)
+	g.UserSockets.m.Unlock()
+
 	return nil
 }
 
@@ -64,9 +80,8 @@ func (g *Gateway) Remove(c *Client) error { //  remove client from channel
 	if err != nil {
 		return err
 	}
-	g.m.Lock()
-	defer g.m.Unlock()
 
+	g.m.Lock()
 	for _, channel := range *channelMembers {
 		for i, client := range g.channels[channel.ChannelId] {
 			if client != c {
@@ -76,6 +91,18 @@ func (g *Gateway) Remove(c *Client) error { //  remove client from channel
 			break
 		}
 	}
+	g.m.Unlock()
+
+	userUUID := c.uuid.String()
+	g.UserSockets.m.Lock()
+	userSockets := g.UserSockets.userSockets[userUUID]
+	for i, userSocket := range userSockets {
+		if userSocket.token == c.token {
+			g.UserSockets.userSockets[userUUID] = append(g.UserSockets.userSockets[userUUID][:i], g.UserSockets.userSockets[userUUID][i+1:]...)
+			break
+		}
+	}
+	g.UserSockets.m.Unlock()
 	return nil
 }
 
