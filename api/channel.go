@@ -17,6 +17,7 @@ type ChannelDatabase interface {
 	InjectUserByChannelId(user *model.User, channelId uint) error
 	RemoveUserByChannelId(user *model.User, channelId uint) error
 	GetUserRoleInChannelByUUID(userUUID uuid.UUID, channelId uint) (int, error)
+	GetChannelInvitationLink(channel_id uint) (*[]model.InvitationChannel, error)
 	CreateChannelInvitationLink(channel_id uint, link_type int) (string, error)
 }
 
@@ -104,32 +105,21 @@ func (a *ChannelAPI) GetChannelIdsHandler(c *gin.Context) {
 	})
 }
 
+type getChannelInvitationLink struct {
+	ChannelID uint `json:"channel_id" binding:"required"`
+}
+
 func (a *ChannelAPI) GetChannelInvitationLinkHandler(c *gin.Context) {
-	//
-}
-
-type createChannelInvitationLink struct {
-	ChannelUUID uint `json:"channel_uuid"`
-	ExpireType  int  `json:"expire_type"` // dispoable, 1 hour, 1 day, 1 week, 1 month, permanent
-}
-
-func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
-	var form createChannelInvitationLink
-	err := c.BindJSON(form)
+	form := &getChannelInvitationLink{}
+	err := c.BindJSON(&form)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "internal server error",
 		})
 		return
 	}
-	if form.ExpireType < 0 || form.ExpireType > 6 {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": "internal server error",
-		})
-		return
-	}
-	userRole, err := a.d.GetUserRoleInChannelByUUID(claims.UserUUID, form.ChannelUUID)
+	userRole, err := a.d.GetUserRoleInChannelByUUID(claims.UserUUID, form.ChannelID)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "no permission to create link",
@@ -142,7 +132,54 @@ func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
 		})
 		return
 	}
-	link, err := a.d.CreateChannelInvitationLink(form.ChannelUUID, form.ExpireType)
+
+	links, err := a.d.GetChannelInvitationLink(form.ChannelID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"links": links,
+	})
+}
+
+type createChannelInvitationLink struct {
+	ChannelID  uint `json:"channelid" binding:"required"`
+	ExpireType int  `json:"expiretype" binding:"required"` // dispoable, 1 hour, 1 day, 1 week, 1 month, permanent
+}
+
+func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
+	form := &createChannelInvitationLink{}
+	err := c.BindJSON(&form)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+	if form.ExpireType < 0 || form.ExpireType > 6 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+	userRole, err := a.d.GetUserRoleInChannelByUUID(claims.UserUUID, form.ChannelID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	if userRole != pylontype.UserRoleOwner {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	link, err := a.d.CreateChannelInvitationLink(form.ChannelID, form.ExpireType)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"message": "no permission to create link",

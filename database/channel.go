@@ -53,8 +53,8 @@ func (d *Database) IsUserInChannelByUUID(userUUID uuid.UUID, channelId uint) (bo
 }
 
 func (d *Database) GetUserRoleInChannelByUUID(userUUID uuid.UUID, channelId uint) (int, error) {
-	channelMember := new(model.ChannelMember)
-	err := d.DB.Where("id = ? AND owner = ?", channelId, userUUID.String()).Find(channelMember).Error
+	channel := new(model.Channel)
+	err := d.DB.Where("id = ? AND owner = ?", channelId, userUUID.String()).Find(channel).Error
 	if err != nil {
 		return -1, err
 	}
@@ -75,4 +75,15 @@ func (d *Database) CreateChannelInvitationLink(channel_id uint, link_type int) (
 	}).Error
 
 	return invitationLink, err
+}
+
+func (d *Database) GetChannelInvitationLink(channel_id uint) (*[]model.InvitationChannel, error) {
+	var invitationModel []model.InvitationChannel
+	err := d.DB.Where("channel_id = ?", channel_id).Find(&invitationModel).Error
+	if err == gorm.ErrRecordNotFound {
+		return &invitationModel, nil
+	} else if err != nil {
+		return &invitationModel, err
+	}
+	return &invitationModel, err
 }
