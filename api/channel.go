@@ -5,6 +5,7 @@ import (
 
 	"github.com/PylonSchema/server/auth"
 	"github.com/PylonSchema/server/model"
+	"github.com/PylonSchema/server/pylontype"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -15,59 +16,36 @@ type ChannelDatabase interface {
 	GetChannelsByUserUUID(uuid uuid.UUID) (*[]model.ChannelMember, error)
 	InjectUserByChannelId(user *model.User, channelId uint) error
 	RemoveUserByChannelId(user *model.User, channelId uint) error
+	GetUserRoleInChannelByUUID(userUUID uuid.UUID, channelId uint) (int, error)
+	GetChannelInvitationLink(channel_id uint) (*[]model.InvitationChannel, error)
+	CreateChannelInvitationLink(channel_id uint, link_type int) (string, error)
+}
+
+type ChannelGateway interface {
 }
 
 type ChannelAPI struct {
-	DB ChannelDatabase
+	d ChannelDatabase
+	g ChannelGateway
 }
 
 type createChannelPayload struct {
-	Name    string   `json:"name" binding:"required"`
-	Members []string `json:"members" binding:"required"`
+	Name string `json:"name" binding:"required"`
 }
 
 type ChannelPayload struct {
 	ChannelId uint
 }
 
-func (a *ChannelAPI) createChannelModel(payload *createChannelPayload, owner uuid.UUID) (*model.Channel, error) {
-	channelUUID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
+func NewChannelAPI(database ChannelDatabase, gateway ChannelGateway) *ChannelAPI {
+	return &ChannelAPI{
+		d: database,
+		g: gateway,
 	}
-	membersSet := make(map[uuid.UUID]struct{})
-	members := make([]model.ChannelMember, 0)
-	for _, member := range payload.Members {
-		memberUUID, err := uuid.Parse(member)
-		if err != nil {
-			continue
-		}
-		if memberUUID == owner {
-			continue
-		}
-		_, found := membersSet[memberUUID]
-		if !found {
-			membersSet[memberUUID] = struct{}{}
-			members = append(members, model.ChannelMember{
-				UUID: memberUUID,
-			})
-		}
-	}
-	members = append(members, model.ChannelMember{
-		UUID: owner,
-	})
-	model := &model.Channel{
-		Name:    payload.Name,
-		UUID:    channelUUID,
-		Owner:   owner,
-		Members: members,
-	}
-	return model, nil
 }
 
 func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
-	uuid := claims.UserUUID
 
 	var payload createChannelPayload
 	err := c.BindJSON(&payload)
@@ -75,14 +53,19 @@ func (a *ChannelAPI) CreateChannelHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "bind json error"})
 		return
 	}
-
-	payload.Members = append(payload.Members, uuid.String())
-	channelModel, err := a.createChannelModel(&payload, uuid)
+	channelUUID, err := uuid.NewRandom()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel model error"})
 		return
 	}
-	err = a.DB.CreateChannel(channelModel)
+	channelMember := []*model.ChannelMember{{UUID: claims.UserUUID}}
+	channelModel := &model.Channel{
+		Name:    payload.Name,
+		UUID:    channelUUID,
+		Owner:   claims.UserUUID,
+		Members: channelMember,
+	}
+	err = a.d.CreateChannel(channelModel)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "create channel error"})
 		return
@@ -97,7 +80,7 @@ func (a *ChannelAPI) RemoveChannelHandler(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
 	}
-	err = a.DB.RemoveChannel(channelPayload.ChannelId)
+	err = a.d.RemoveChannel(channelPayload.ChannelId)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -108,7 +91,7 @@ func (a *ChannelAPI) RemoveChannelHandler(c *gin.Context) {
 func (a *ChannelAPI) GetChannelIdsHandler(c *gin.Context) {
 	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
 	uuid := claims.UserUUID
-	channels, err := a.DB.GetChannelsByUserUUID(uuid)
+	channels, err := a.d.GetChannelsByUserUUID(uuid)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
 		return
@@ -120,6 +103,96 @@ func (a *ChannelAPI) GetChannelIdsHandler(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusOK, gin.H{
 		"channel": channelId,
 	})
+}
+
+type getChannelInvitationLink struct {
+	ChannelID uint `json:"channel_id" binding:"required"`
+}
+
+func (a *ChannelAPI) GetChannelInvitationLinkHandler(c *gin.Context) {
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
+	form := &getChannelInvitationLink{}
+	err := c.BindJSON(&form)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+	userRole, err := a.d.GetUserRoleInChannelByUUID(claims.UserUUID, form.ChannelID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	if userRole != pylontype.UserRoleOwner {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+
+	links, err := a.d.GetChannelInvitationLink(form.ChannelID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "internal server error",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"links": links,
+	})
+}
+
+type createChannelInvitationLink struct {
+	ChannelID  uint `json:"channelid" binding:"required"`
+	ExpireType *int `json:"expiretype" binding:"required"` // dispoable, 1 hour, 1 day, 1 week, 1 month, permanent
+}
+
+func (a *ChannelAPI) CreateChannelInvitationLinkHandler(c *gin.Context) {
+	claims := c.MustGet("claims").(*auth.AuthTokenClaims)
+	form := &createChannelInvitationLink{}
+	err := c.BindJSON(&form)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "invalid form",
+		})
+		return
+	}
+	if *form.ExpireType < 0 || *form.ExpireType > 6 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "expire type must be in 0-6",
+		})
+		return
+	}
+	userRole, err := a.d.GetUserRoleInChannelByUUID(claims.UserUUID, form.ChannelID)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	if userRole != pylontype.UserRoleOwner {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	link, err := a.d.CreateChannelInvitationLink(form.ChannelID, *form.ExpireType)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"message": "no permission to create link",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"link": link,
+	})
+}
+
+func (a *ChannelAPI) RemoveChannelInvitationLinkHandler(c *gin.Context) {
+	//
 }
 
 // authentication for join channel implement needed

@@ -40,7 +40,7 @@ type AuthTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewJwtAuth(db *database.GormDatabase, store *store.StoreDatabase, secret string) *JwtAuth {
+func NewJwtAuth(db *database.Database, store *store.StoreDatabase, secret string) *JwtAuth {
 	return &JwtAuth{
 		DB:     db,
 		Store:  store,

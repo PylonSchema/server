@@ -67,7 +67,11 @@ func (c *Client) defineClient(message *Message) error {
 }
 
 func (c *Client) GatewayInject() error {
-	return c.gatewayPipe.Inject(c)
+	err := c.gatewayPipe.Inject(c)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) GatewayRemove() {

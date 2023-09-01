@@ -4,6 +4,10 @@
     address= "database address"
     port="database port"
 
+[scylla]
+    port="9042"
+    hosts=["host1", "host2"]
+
 [store]
     address="redis address"
     password="redus password"

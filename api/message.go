@@ -24,7 +24,7 @@ type MessageAPI struct {
 	DB MessageDatabase
 }
 
-func NewMessageAPI(gateway *gateway.Gateway, db *database.GormDatabase) *MessageAPI {
+func NewMessageAPI(gateway *gateway.Gateway, db *database.Database) *MessageAPI {
 	return &MessageAPI{
 		g:  gateway,
 		DB: db,

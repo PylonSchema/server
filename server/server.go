@@ -43,10 +43,22 @@ func SetupRouter() *gin.Engine {
 	}
 
 	// database setting
-	d, err := database.New(conf.Database.Username, conf.Database.Password, conf.Database.Address, conf.Database.Port)
+	d, err := database.New(&database.DatabaseConfig{
+		SQLConfig: &database.SQLConfig{
+			Username: conf.Database.Username,
+			Password: conf.Database.Password,
+			Address:  conf.Database.Address,
+			Port:     conf.Database.Port,
+		},
+		NOSQLConfig: &database.NOSQLConfig{
+			Hosts: conf.Scylla.Hosts,
+			Port:  conf.Scylla.Port,
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
+
 	err = d.AutoMigration() // auto migration, check table is Exist, if not create
 	if err != nil {
 		panic(err)
@@ -82,9 +94,9 @@ func SetupRouter() *gin.Engine {
 		},
 	}
 
-	channelAPI := api.ChannelAPI{
-		DB: d,
-	}
+	versionAPI := api.NewVersionAPI("localhost", 8080)
+
+	r.GET("/version", versionAPI.VersionHandler)
 
 	gateway := gateway.New(jwtAuth, d)
 
@@ -97,16 +109,16 @@ func SetupRouter() *gin.Engine {
 		messageRouter.POST("/", messageAPI.CreateMessageHandler)
 	}
 
-	userRouter := r.Group("/user").Use(jwtAuth.AuthorizeRequiredMiddleware())
-	{
-		userRouter.GET("/channel")
-	}
+	channelAPI := api.NewChannelAPI(d, gateway)
 
 	channelRouter := r.Group("/channel").Use(jwtAuth.AuthorizeRequiredMiddleware())
 	{
-		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)        // get channel ids
-		channelRouter.POST("/", channelAPI.CreateChannelHandler)       // create channel
-		channelRouter.DELETE("/", channelAPI.RemoveChannelHandler)     // delete channel
+		channelRouter.GET("/", channelAPI.GetChannelIdsHandler)    // get channel ids
+		channelRouter.POST("/", channelAPI.CreateChannelHandler)   // create channel
+		channelRouter.DELETE("/", channelAPI.RemoveChannelHandler) // delete channel
+		channelRouter.GET("/invitation-link", channelAPI.GetChannelInvitationLinkHandler)
+		channelRouter.POST("/invitation-link", channelAPI.CreateChannelInvitationLinkHandler)
+		channelRouter.DELETE("/invitation-link", channelAPI.RemoveChannelInvitationLinkHandler)
 		channelRouter.POST("/join/:id", channelAPI.JoinChannelHandler) // join channel
 	}
 
